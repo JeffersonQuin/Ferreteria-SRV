@@ -11,7 +11,8 @@ export default defineNuxtConfig({
   },
   modules: [
     '@vite-pwa/nuxt',
-    '@nuxtjs/supabase'
+    '@nuxtjs/supabase',
+    '@nuxtjs/tailwindcss'
   ],
   supabase: {
     url: process.env.SUPABASE_URL,
