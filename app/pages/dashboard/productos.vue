@@ -95,8 +95,8 @@ function closeFormModal() {
 function getValidatedPayload() {
   const nombre = form.nombre.trim()
   const descripcion = form.descripcion.trim()
-  const precioCostoRaw = form.precioCosto.trim()
-  const precioVentaRaw = form.precioVenta.trim()
+  const precioCostoRaw = String(form.precioCosto).trim()
+  const precioVentaRaw = String(form.precioVenta).trim()
 
   if (!nombre) {
     formError.value = 'El nombre del producto es obligatorio.'
