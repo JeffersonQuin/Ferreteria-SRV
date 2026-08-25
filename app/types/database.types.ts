@@ -168,6 +168,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      registrar_pago_venta: {
+        Args: {
+          p_venta_id: number
+          p_abono: number
+        }
+        Returns: Json
+      }
       registrar_venta: {
         Args: {
           p_cliente_id: number

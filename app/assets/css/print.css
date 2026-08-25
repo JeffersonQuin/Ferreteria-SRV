@@ -149,3 +149,183 @@
     text-align: center;
   }
 }
+
+/* Space 08: el comprobante histórico y el reporte solo existen visualmente al imprimir. */
+[data-print-document] {
+  display: none;
+}
+
+@media print {
+  [data-print-document][data-print-active="true"],
+  [data-print-document][data-print-active="true"] * {
+    visibility: visible !important;
+  }
+
+  [data-print-document][data-print-active="true"] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: block !important;
+    width: 100%;
+    min-height: 100%;
+    margin: 0;
+    padding: 0;
+    background: #fff !important;
+    color: #111 !important;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 10pt;
+    line-height: 1.35;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  [data-print-document][data-print-active="false"] {
+    display: none !important;
+  }
+
+  .receipt-warning {
+    margin: 7mm 0 0;
+    padding: 3mm;
+    border: 1px solid #777;
+    font-size: 9pt;
+  }
+
+  .report-header {
+    margin-bottom: 6mm;
+    padding-bottom: 4mm;
+    border-bottom: 2px solid #222;
+    text-align: center;
+  }
+
+  .report-header h1,
+  .report-header h2,
+  .report-header p {
+    margin: 0;
+  }
+
+  .report-header h1 {
+    font-size: 18pt;
+  }
+
+  .report-header h2 {
+    margin-top: 1.5mm;
+    font-size: 13pt;
+  }
+
+  .report-header p {
+    margin-top: 2mm;
+    font-size: 9pt;
+  }
+
+  .report-filters {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4mm;
+    margin: 0 0 6mm;
+    padding: 3mm;
+    border: 1px solid #777;
+  }
+
+  .report-filters div {
+    min-width: 0;
+  }
+
+  .report-filters dt {
+    font-size: 8pt;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .report-filters dd {
+    margin: 1mm 0 0;
+    overflow-wrap: anywhere;
+  }
+
+  .report-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+
+  .report-table thead {
+    display: table-header-group;
+  }
+
+  .report-table th,
+  .report-table td {
+    padding: 2mm 1.5mm;
+    border: 1px solid #555;
+    color: #111 !important;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .report-table th {
+    background: #e5e5e5 !important;
+    font-size: 8pt;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .report-table th:first-child,
+  .report-table td:first-child {
+    width: 22%;
+  }
+
+  .report-table th:nth-child(2),
+  .report-table td:nth-child(2) {
+    width: 30%;
+    overflow-wrap: anywhere;
+  }
+
+  .report-table th:nth-child(3),
+  .report-table td:nth-child(3),
+  .report-table th:nth-child(4),
+  .report-table td:nth-child(4) {
+    width: 16%;
+    text-align: right;
+  }
+
+  .report-table th:nth-child(5),
+  .report-table td:nth-child(5) {
+    width: 16%;
+    text-align: center;
+  }
+
+  .report-table tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .report-totals {
+    width: min(100%, 120mm);
+    margin: 7mm 0 0 auto;
+    padding-top: 3mm;
+    border-top: 2px solid #222;
+  }
+
+  .report-totals div {
+    display: flex;
+    justify-content: space-between;
+    gap: 8mm;
+    padding: 1.5mm 0;
+  }
+
+  .report-totals dt,
+  .report-totals dd {
+    margin: 0;
+    font-weight: 700;
+  }
+
+  .report-totals dd {
+    text-align: right;
+  }
+
+  .report-footer {
+    margin-top: 10mm;
+    padding-top: 3mm;
+    border-top: 1px solid #777;
+    text-align: center;
+    font-size: 8pt;
+  }
+}

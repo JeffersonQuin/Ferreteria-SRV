@@ -5,7 +5,8 @@ const links = [
   { label: 'Dashboard', to: '/dashboard', exact: true },
   { label: 'Clientes', to: '/dashboard/clientes', exact: false },
   { label: 'Productos', to: '/dashboard/productos', exact: false },
-  { label: 'Ventas', to: '/dashboard/ventas', exact: false }
+  { label: 'Ventas', to: '/dashboard/ventas', exact: false },
+  { label: 'Historial', to: '/dashboard/historial', exact: false }
 ]
 
 function isActive(to: string, exact: boolean) {
@@ -32,6 +33,10 @@ function isActive(to: string, exact: boolean) {
           <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
           <circle cx="9" cy="7" r="4" />
           <path d="M19 8v6m3-3h-6" />
+        </svg>
+        <svg v-else-if="link.to === '/dashboard/historial'" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+          <path d="M3 3v5h5M12 7v5l3 2" />
         </svg>
         <svg v-else class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true">
           <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
