@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { Cliente } from '~/composables/useClientes'
+import ClienteFormModal from '~/components/clientes/ClienteFormModal.vue'
+import type { Cliente, ClientePayload } from '~/composables/useClientes'
 
 definePageMeta({ middleware: 'auth' })
 useHead({ title: 'Clientes - Ferretería SRV' })
@@ -22,13 +23,8 @@ const searchQuery = ref('')
 const formMode = ref<'create' | 'edit' | null>(null)
 const selectedCliente = ref<Cliente | null>(null)
 const deleteCandidate = ref<Cliente | null>(null)
-const form = reactive({ nombre: '', celular: '' })
-const formError = ref<string | null>(null)
 const successMessage = ref<string | null>(null)
-const nameInput = ref<HTMLInputElement | null>(null)
 const deleteCancelButton = ref<HTMLButtonElement | null>(null)
-const formDialog = ref<HTMLElement | null>(null)
-const deleteDialog = ref<HTMLElement | null>(null)
 
 const clientesFiltrados = computed(() => {
   const query = searchQuery.value.trim().toLocaleLowerCase('es')
@@ -40,32 +36,27 @@ const clientesFiltrados = computed(() => {
   )
 })
 
-const formTitle = computed(() => formMode.value === 'edit' ? 'Editar cliente' : 'Nuevo cliente')
-const submitLabel = computed(() => formMode.value === 'edit' ? 'Guardar cambios' : 'Guardar cliente')
+const formInitialValues = computed(() => ({
+  nombre: selectedCliente.value?.nombre ?? '',
+  celular: selectedCliente.value?.celular ?? ''
+}))
 
 function resetFeedback() {
-  formError.value = null
   clearMutationError()
 }
 
 function openCreateModal() {
   selectedCliente.value = null
-  form.nombre = ''
-  form.celular = ''
   formMode.value = 'create'
   successMessage.value = null
   resetFeedback()
-  nextTick(() => nameInput.value?.focus())
 }
 
 function openEditModal(cliente: Cliente) {
   selectedCliente.value = cliente
-  form.nombre = cliente.nombre
-  form.celular = cliente.celular
   formMode.value = 'edit'
   successMessage.value = null
   resetFeedback()
-  nextTick(() => nameInput.value?.focus())
 }
 
 function closeFormModal() {
@@ -75,19 +66,9 @@ function closeFormModal() {
   resetFeedback()
 }
 
-async function submitForm() {
-  const nombre = form.nombre.trim()
-  const celular = form.celular.trim()
-
-  resetFeedback()
-
-  if (!nombre || !celular) {
-    formError.value = 'Nombre y celular son obligatorios.'
-    return
-  }
-
+async function submitForm(payload: ClientePayload) {
   if (formMode.value === 'edit' && selectedCliente.value) {
-    const updated = await updateCliente(selectedCliente.value.id, { nombre, celular })
+    const updated = await updateCliente(selectedCliente.value.id, payload)
     if (!updated) return
 
     closeFormModal()
@@ -95,7 +76,7 @@ async function submitForm() {
     return
   }
 
-  const created = await createCliente({ nombre, celular })
+  const created = await createCliente(payload)
   if (!created) return
 
   closeFormModal()
@@ -125,14 +106,6 @@ async function confirmDelete() {
   closeDeleteModal()
   successMessage.value = `${cliente.nombre} fue eliminado correctamente.`
 }
-
-watch(
-  () => [form.nombre, form.celular],
-  () => {
-    formError.value = null
-    clearMutationError()
-  }
-)
 
 onMounted(fetchClientes)
 </script>
@@ -264,71 +237,15 @@ onMounted(fetchClientes)
       </template>
     </div>
 
-    <div
-      v-if="formMode"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="cliente-form-title"
-      @click.self="closeFormModal"
-      @keydown.esc="closeFormModal"
-    >
-      <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-        <div class="mb-5 flex items-start justify-between gap-4">
-          <div>
-            <h2 id="cliente-form-title" class="text-xl font-bold text-[#6B3A2A]">{{ formTitle }}</h2>
-            <p class="mt-1 text-sm text-gray-500">Completa los datos obligatorios del cliente.</p>
-          </div>
-          <button type="button" class="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#D4A574]" aria-label="Cerrar diálogo" :disabled="saving" @click="closeFormModal">×</button>
-        </div>
-
-        <form class="space-y-4" novalidate @submit.prevent="submitForm">
-          <div>
-            <label for="cliente-nombre" class="mb-1.5 block text-sm font-semibold text-gray-700">Nombre</label>
-            <input
-              id="cliente-nombre"
-              ref="nameInput"
-              v-model="form.nombre"
-              type="text"
-              required
-              autocomplete="name"
-              maxlength="150"
-              class="w-full rounded-lg border border-[#D4A574] px-3 py-2.5 text-gray-800 placeholder-gray-400 focus:border-[#6B3A2A] focus:outline-none focus:ring-2 focus:ring-[#D4A574]"
-              placeholder="Nombre completo"
-            >
-          </div>
-
-          <div>
-            <label for="cliente-celular" class="mb-1.5 block text-sm font-semibold text-gray-700">Celular</label>
-            <input
-              id="cliente-celular"
-              v-model="form.celular"
-              type="tel"
-              required
-              autocomplete="tel"
-              maxlength="30"
-              class="w-full rounded-lg border border-[#D4A574] px-3 py-2.5 text-gray-800 placeholder-gray-400 focus:border-[#6B3A2A] focus:outline-none focus:ring-2 focus:ring-[#D4A574]"
-              placeholder="Número de celular"
-            >
-          </div>
-
-          <div v-if="formError || mutationError" role="alert" class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-            {{ formError || mutationError }}
-          </div>
-
-          <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
-            <button type="button" class="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#D4A574]" :disabled="saving" @click="closeFormModal">Cancelar</button>
-            <button type="submit" class="inline-flex min-w-36 items-center justify-center gap-2 rounded-lg bg-[#6B3A2A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#8B5A3C] focus:outline-none focus:ring-2 focus:ring-[#D4A574] disabled:cursor-not-allowed disabled:opacity-60" :disabled="saving">
-              <svg v-if="saving" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.37 0 0 5.37 0 12h4Z" />
-              </svg>
-              {{ saving ? 'Guardando...' : submitLabel }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <ClienteFormModal
+      :open="formMode !== null"
+      :saving="saving"
+      :error="mutationError"
+      :mode="formMode ?? 'create'"
+      :initial-values="formInitialValues"
+      @submit="submitForm"
+      @close="closeFormModal"
+    />
 
     <div
       v-if="deleteCandidate"

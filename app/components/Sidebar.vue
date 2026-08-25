@@ -4,7 +4,8 @@ const route = useRoute()
 const links = [
   { label: 'Dashboard', to: '/dashboard', exact: true },
   { label: 'Clientes', to: '/dashboard/clientes', exact: false },
-  { label: 'Productos', to: '/dashboard/productos', exact: false }
+  { label: 'Productos', to: '/dashboard/productos', exact: false },
+  { label: 'Ventas', to: '/dashboard/ventas', exact: false }
 ]
 
 function isActive(to: string, exact: boolean) {

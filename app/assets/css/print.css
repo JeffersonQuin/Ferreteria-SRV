@@ -1,0 +1,151 @@
+@page {
+  size: A4;
+  margin: 12mm;
+}
+
+[data-print-receipt] {
+  display: none;
+}
+
+@media print {
+  html,
+  body {
+    background: #fff !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  [data-print-receipt],
+  [data-print-receipt] * {
+    visibility: visible !important;
+  }
+
+  [data-print-receipt] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: block !important;
+    width: 100%;
+    min-height: 100%;
+    margin: 0;
+    padding: 0;
+    background: #fff !important;
+    color: #111 !important;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 11pt;
+    line-height: 1.4;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .receipt-header {
+    margin-bottom: 8mm;
+    padding-bottom: 4mm;
+    border-bottom: 2px solid #222;
+    text-align: center;
+  }
+
+  .receipt-header h1 {
+    margin: 0;
+    font-size: 20pt;
+    letter-spacing: 0.04em;
+  }
+
+  .receipt-header p {
+    margin: 2mm 0 0;
+    font-size: 11pt;
+  }
+
+  .receipt-details,
+  .receipt-totals {
+    margin: 0;
+  }
+
+  .receipt-details {
+    margin-bottom: 7mm;
+  }
+
+  .receipt-details div,
+  .receipt-totals div {
+    display: flex;
+    justify-content: space-between;
+    gap: 8mm;
+    padding: 1.2mm 0;
+  }
+
+  .receipt-details dt,
+  .receipt-totals dt {
+    font-weight: 700;
+  }
+
+  .receipt-details dd,
+  .receipt-totals dd {
+    margin: 0;
+    text-align: right;
+  }
+
+  .receipt-table {
+    width: 100%;
+    margin: 0 0 7mm;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+
+  .receipt-table th,
+  .receipt-table td {
+    padding: 2.5mm 2mm;
+    border: 1px solid #444;
+    color: #111 !important;
+    text-align: right;
+    vertical-align: top;
+  }
+
+  .receipt-table th {
+    background: #e5e5e5 !important;
+    font-size: 9pt;
+    font-weight: 700;
+  }
+
+  .receipt-table th:first-child,
+  .receipt-table td:first-child {
+    width: 46%;
+    overflow-wrap: anywhere;
+    text-align: left;
+  }
+
+  .receipt-table th:nth-child(2),
+  .receipt-table td:nth-child(2) {
+    width: 12%;
+    text-align: center;
+  }
+
+  .receipt-table tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .receipt-totals {
+    width: min(100%, 95mm);
+    margin-left: auto;
+    padding-top: 3mm;
+    border-top: 2px solid #222;
+  }
+
+  .receipt-totals div:first-child {
+    font-size: 13pt;
+    font-weight: 700;
+  }
+
+  .receipt-footer {
+    margin: 12mm 0 0;
+    padding-top: 4mm;
+    border-top: 1px solid #777;
+    text-align: center;
+  }
+}

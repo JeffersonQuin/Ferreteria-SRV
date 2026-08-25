@@ -9,6 +9,7 @@ export default defineNuxtConfig({
       ]
     }
   },
+  css: ['~/assets/css/print.css'],
   modules: [
     '@vite-pwa/nuxt',
     '@nuxtjs/supabase',
