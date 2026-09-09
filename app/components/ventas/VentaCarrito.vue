@@ -7,6 +7,7 @@ defineProps<{ items: CarritoItem[] }>()
 const emit = defineEmits<{
   updateCantidad: [productoId: number, cantidad: number]
   remove: [productoId: number]
+  abrirModalProducto: []
 }>()
 
 function update(item: CarritoItem, event: Event) {
@@ -22,8 +23,18 @@ function update(item: CarritoItem, event: Event) {
 
 <template>
   <section aria-labelledby="carrito-title" class="overflow-hidden rounded-xl border border-[#D4A574] bg-white shadow-sm">
-    <div class="border-b border-[#D4A574] px-4 py-3 sm:px-5">
+    <div class="flex items-center justify-between border-b border-[#D4A574] px-4 py-3 sm:px-5">
       <h2 id="carrito-title" class="font-bold text-[#6B3A2A]">Carrito</h2>
+      <button
+        type="button"
+        aria-label="Agregar producto al carrito"
+        class="flex h-11 w-11 items-center justify-center rounded-full bg-[#6B3A2A] text-white shadow-sm hover:bg-[#8B5A3C] focus:outline-none focus:ring-2 focus:ring-[#D4A574] focus:ring-offset-2 active:scale-95 transition-transform"
+        @click="emit('abrirModalProducto')"
+      >
+        <svg viewBox="0 0 20 20" fill="currentColor" class="h-6 w-6" aria-hidden="true">
+          <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
+        </svg>
+      </button>
     </div>
     <div v-if="!items.length" class="flex min-h-40 items-center justify-center p-6 text-center text-sm text-gray-500">
       Aún no agregaste productos

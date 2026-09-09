@@ -182,6 +182,7 @@ function createComprobanteSnapshot(
 export function useVentas() {
   const supabase = useSupabaseClient<Database>()
   const clienteSeleccionado = ref<Cliente | null>(null)
+  // productoSeleccionado y cantidad se conservan para compatibilidad con el flujo legacy
   const productoSeleccionado = ref<Producto | null>(null)
   const cantidad = ref(1)
   const carrito = ref<CarritoItem[]>([])
@@ -247,6 +248,7 @@ export function useVentas() {
     )
   )
 
+  // Variante original (mantiene compatibilidad con flujo legacy de la página)
   function agregarProducto() {
     const producto = productoSeleccionado.value
     if (!producto || !Number.isInteger(cantidad.value) || cantidad.value < 1) return false
@@ -272,6 +274,25 @@ export function useVentas() {
 
     productoSeleccionado.value = null
     cantidad.value = 1
+    error.value = null
+    return true
+  }
+
+  /** Variante usada por ModalAgregarProducto: recibe datos ya resueltos desde el modal */
+  function agregarProductoDirecto(
+    productoId: number,
+    nombre: string,
+    precioVentaCentavos: number,
+    precioCostoCentavos: number,
+    cant: number
+  ) {
+    if (!Number.isInteger(cant) || cant < 1) return false
+    const existente = carrito.value.find(item => item.productoId === productoId)
+    if (existente) {
+      existente.cantidad += cant
+    } else {
+      carrito.value.push({ productoId, nombre, precioVentaCentavos, precioCostoCentavos, cantidad: cant })
+    }
     error.value = null
     return true
   }
@@ -377,6 +398,7 @@ export function useVentas() {
     canRegister,
     tieneDatosSinGuardar,
     agregarProducto,
+    agregarProductoDirecto,
     actualizarCantidad,
     eliminarProducto,
     limpiar,

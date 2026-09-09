@@ -100,6 +100,13 @@ function onKeydown(event: KeyboardEvent) {
 function closeLater() {
   window.setTimeout(() => { open.value = false }, 120)
 }
+
+function cerrarLista() {
+  open.value = false
+  activeIndex.value = -1
+  // Devolver foco al input sin disparar blur → re-apertura
+  document.getElementById(inputId)?.focus()
+}
 </script>
 
 <template>
@@ -129,6 +136,19 @@ function closeLater() {
       role="listbox"
       class="absolute z-30 mt-1 max-h-64 w-full overflow-y-auto rounded-lg border border-[#D4A574] bg-white py-1 shadow-lg"
     >
+      <!-- Botón cerrar lista -->
+      <li role="presentation" class="flex justify-end border-b border-gray-100 px-2 py-1">
+        <button
+          type="button"
+          aria-label="Cerrar sugerencias"
+          class="flex h-11 w-11 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#D4A574]"
+          @mousedown.prevent="cerrarLista"
+        >
+          <svg viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5" aria-hidden="true">
+            <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+          </svg>
+        </button>
+      </li>
       <li
         v-for="(cliente, index) in filtered"
         :id="optionId(cliente)"

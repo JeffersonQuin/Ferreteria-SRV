@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import ClienteFormModal from '~/components/clientes/ClienteFormModal.vue'
-import ProductoFormModal from '~/components/productos/ProductoFormModal.vue'
 import AutocompleteCliente from '~/components/ventas/AutocompleteCliente.vue'
-import AutocompleteProducto from '~/components/ventas/AutocompleteProducto.vue'
+import ClienteFormModal from '~/components/clientes/ClienteFormModal.vue'
+import ModalAgregarProducto from '~/components/ventas/ModalAgregarProducto.vue'
+import ProductoFormModal from '~/components/productos/ProductoFormModal.vue'
 import VentaCarrito from '~/components/ventas/VentaCarrito.vue'
 import VentaComprobante from '~/components/ventas/VentaComprobante.vue'
 import VentaExitoModal from '~/components/ventas/VentaExitoModal.vue'
@@ -36,7 +36,6 @@ const {
 const {
   clienteSeleccionado,
   productoSeleccionado,
-  cantidad,
   carrito,
   montoIngresado,
   registering,
@@ -51,7 +50,7 @@ const {
   pagoMensaje,
   canRegister,
   tieneDatosSinGuardar,
-  agregarProducto,
+  agregarProductoDirecto,
   actualizarCantidad,
   eliminarProducto,
   limpiar,
@@ -61,23 +60,17 @@ const {
 const showClienteModal = ref(false)
 const showProductoModal = ref(false)
 const showSuccessModal = ref(false)
+const showModalAgregar = ref(false)
 const printError = ref<string | null>(null)
 const reopenSuccessButton = ref<HTMLButtonElement | null>(null)
 const catalogLoading = computed(() => loadingClientes.value || loadingProductos.value)
 const catalogError = computed(() => clientesError.value || productosError.value)
-const cantidadValida = computed(() => Number.isInteger(cantidad.value) && cantidad.value > 0)
-const canAddProduct = computed(() =>
-  Boolean(productoSeleccionado.value)
-  && cantidadValida.value
-  && !catalogLoading.value
-  && !registering.value
-  && !ventaRegistrada.value
-)
 
 async function loadCatalogs() {
   await Promise.all([fetchClientes(), fetchProductos()])
 }
 
+// ── Cliente modal ────────────────────────────────────────────────────────────
 function openClienteModal() {
   clearClienteError()
   showClienteModal.value = true
@@ -96,6 +89,7 @@ async function crearClienteRapido(payload: ClientePayload) {
   closeClienteModal()
 }
 
+// ── Producto form modal (creación rápida desde el modal de agregar) ───────────
 function openProductoModal() {
   clearProductoError()
   showProductoModal.value = true
@@ -114,6 +108,28 @@ async function crearProductoRapido(payload: ProductoPayload) {
   closeProductoModal()
 }
 
+// ── Modal agregar producto ────────────────────────────────────────────────────
+function abrirModalAgregar() {
+  if (catalogLoading.value || registering.value || ventaRegistrada.value) return
+  showModalAgregar.value = true
+}
+
+function cerrarModalAgregar() {
+  showModalAgregar.value = false
+}
+
+function onAgregarProducto(
+  productoId: number,
+  nombre: string,
+  precioVentaCentavos: number,
+  precioCostoCentavos: number,
+  cantidad: number
+) {
+  agregarProductoDirecto(productoId, nombre, precioVentaCentavos, precioCostoCentavos, cantidad)
+  cerrarModalAgregar()
+}
+
+// ── Venta ─────────────────────────────────────────────────────────────────────
 function limpiarConConfirmacion() {
   if (ventaRegistrada.value) return
   if (tieneDatosSinGuardar.value && !window.confirm('¿Deseas descartar todos los datos de esta venta?')) return
@@ -171,7 +187,7 @@ onMounted(loadCatalogs)
     <header class="mb-6">
       <p class="mb-1 text-sm font-semibold uppercase tracking-wide text-[#8B5A3C]">Operaciones</p>
       <h1 id="ventas-title" class="text-2xl font-bold text-[#6B3A2A] sm:text-3xl">Registro de Ventas</h1>
-      <p class="mt-2 text-sm text-gray-600">Selecciona un cliente, agrega productos y registra el pago.</p>
+      <p class="mt-2 text-sm text-gray-600">Selecciona un cliente, agrega productos al carrito y registra el pago.</p>
     </header>
 
     <div v-if="catalogLoading" class="mb-5 flex items-center gap-3 rounded-xl border border-[#D4A574] bg-white p-4 text-sm text-gray-600" role="status">
@@ -206,52 +222,28 @@ onMounted(loadCatalogs)
 
     <div class="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
       <div class="min-w-0 space-y-5">
-        <section aria-labelledby="seleccion-title" class="rounded-xl border border-[#D4A574] bg-white p-4 shadow-sm sm:p-5">
-          <h2 id="seleccion-title" class="mb-4 font-bold text-[#6B3A2A]">Cliente y productos</h2>
+
+        <!-- Sección Cliente -->
+        <section aria-labelledby="cliente-section-title" class="rounded-xl border border-[#D4A574] bg-white p-4 shadow-sm sm:p-5">
+          <h2 id="cliente-section-title" class="mb-4 font-bold text-[#6B3A2A]">Cliente</h2>
           <AutocompleteCliente
             v-model="clienteSeleccionado"
             :clientes="clientes"
             :disabled="catalogLoading || registering || Boolean(ventaRegistrada)"
             @create="openClienteModal"
           />
-
           <div v-if="clienteSeleccionado" aria-live="polite" class="mt-3 rounded-lg bg-[#F5E6D3] px-3 py-2 text-sm text-[#6B3A2A]">
             Cliente seleccionado: <strong>{{ clienteSeleccionado.nombre }}</strong> · {{ clienteSeleccionado.celular }}
           </div>
-
-          <div class="mt-5 grid min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_7rem_auto] sm:items-end">
-            <AutocompleteProducto
-              v-model="productoSeleccionado"
-              :productos="productos"
-              :disabled="catalogLoading || registering || Boolean(ventaRegistrada)"
-              @create="openProductoModal"
-            />
-            <div>
-              <label for="cantidad-producto" class="mb-1.5 block text-sm font-semibold text-gray-700">Cantidad</label>
-              <input
-                id="cantidad-producto"
-                v-model.number="cantidad"
-                type="number"
-                min="1"
-                step="1"
-                inputmode="numeric"
-                :disabled="registering || Boolean(ventaRegistrada)"
-                class="w-full rounded-lg border border-[#D4A574] px-3 py-2.5 text-gray-800 focus:border-[#6B3A2A] focus:outline-none focus:ring-2 focus:ring-[#D4A574] disabled:bg-gray-100"
-              >
-            </div>
-            <button
-              type="button"
-              class="min-h-11 rounded-lg bg-[#6B3A2A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#8B5A3C] focus:outline-none focus:ring-2 focus:ring-[#D4A574] disabled:cursor-not-allowed disabled:opacity-60"
-              :disabled="!canAddProduct"
-              @click="agregarProducto"
-            >
-              Agregar al Carrito
-            </button>
-          </div>
-          <p v-if="!cantidadValida" role="alert" class="mt-2 text-sm text-red-600">La cantidad debe ser un entero mayor que cero.</p>
         </section>
 
-        <VentaCarrito :items="carrito" @update-cantidad="actualizarCantidad" @remove="eliminarProducto" />
+        <!-- Carrito (lleva el botón circular + para agregar productos) -->
+        <VentaCarrito
+          :items="carrito"
+          @update-cantidad="actualizarCantidad"
+          @remove="eliminarProducto"
+          @abrir-modal-producto="abrirModalAgregar"
+        />
       </div>
 
       <VentaResumen
@@ -271,6 +263,7 @@ onMounted(loadCatalogs)
       />
     </div>
 
+    <!-- Modales -->
     <ClienteFormModal
       :open="showClienteModal"
       :saving="savingCliente"
@@ -280,6 +273,8 @@ onMounted(loadCatalogs)
       @submit="crearClienteRapido"
       @close="closeClienteModal"
     />
+
+    <!-- Modal de creación rápida de producto (abierto desde ModalAgregarProducto) -->
     <ProductoFormModal
       :open="showProductoModal"
       :saving="savingProducto"
@@ -288,6 +283,16 @@ onMounted(loadCatalogs)
       :initial-values="{ nombre: '', descripcion: '', precioCosto: '', precioVenta: '' }"
       @submit="crearProductoRapido"
       @close="closeProductoModal"
+    />
+
+    <!-- Modal para seleccionar producto y cantidad -->
+    <ModalAgregarProducto
+      :open="showModalAgregar"
+      :productos="productos"
+      :disabled="catalogLoading || registering || Boolean(ventaRegistrada)"
+      @close="cerrarModalAgregar"
+      @create="openProductoModal"
+      @agregar="onAgregarProducto"
     />
 
     <VentaExitoModal
