@@ -306,6 +306,15 @@ export function useVentas() {
     return true
   }
 
+  function actualizarPrecioVenta(productoId: number, nuevoPrecioCentavos: number) {
+    if (!Number.isSafeInteger(nuevoPrecioCentavos) || nuevoPrecioCentavos <= 0) return false
+    const item = carrito.value.find(entry => entry.productoId === productoId)
+    if (!item) return false
+    item.precioVentaCentavos = nuevoPrecioCentavos
+    error.value = null
+    return true
+  }
+
   function eliminarProducto(productoId: number) {
     carrito.value = carrito.value.filter(item => item.productoId !== productoId)
     error.value = null
@@ -400,6 +409,7 @@ export function useVentas() {
     agregarProducto,
     agregarProductoDirecto,
     actualizarCantidad,
+    actualizarPrecioVenta,
     eliminarProducto,
     limpiar,
     registrarVenta

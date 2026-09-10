@@ -52,6 +52,7 @@ const {
   tieneDatosSinGuardar,
   agregarProductoDirecto,
   actualizarCantidad,
+  actualizarPrecioVenta,
   eliminarProducto,
   limpiar,
   registrarVenta
@@ -241,6 +242,7 @@ onMounted(loadCatalogs)
         <VentaCarrito
           :items="carrito"
           @update-cantidad="actualizarCantidad"
+          @update-precio="actualizarPrecioVenta"
           @remove="eliminarProducto"
           @abrir-modal-producto="abrirModalAgregar"
         />
