@@ -364,7 +364,8 @@ export function useVentas() {
         p_monto_ingresado: montoSnapshot / 100,
         p_items: carrito.value.map(item => ({
           producto_id: item.productoId,
-          cantidad: item.cantidad
+          cantidad: item.cantidad,
+          precio_venta_unitario: item.precioVentaCentavos / 100
         }))
       })
 

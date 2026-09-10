@@ -30,7 +30,7 @@ function formatDate(value: string) {
         <tr>
           <th scope="col">PRODUCTO</th>
           <th scope="col">CANT.</th>
-          <th scope="col">P. UNIT.</th>
+          <th scope="col">P. VENTA</th>
           <th scope="col">SUBTOTAL</th>
         </tr>
       </thead>

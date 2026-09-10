@@ -37,7 +37,7 @@ function formatDate(value: string) {
 
       <table class="receipt-table">
         <thead>
-          <tr><th>Producto</th><th>Cant.</th><th>P. unitario</th><th>Subtotal</th></tr>
+          <tr><th>Producto</th><th>Cant.</th><th>P. Venta</th><th>Subtotal</th></tr>
         </thead>
         <tbody>
           <tr v-for="item in detalle.items" :key="`${item.ventaId}-${item.productoId ?? item.nombreProducto}`">

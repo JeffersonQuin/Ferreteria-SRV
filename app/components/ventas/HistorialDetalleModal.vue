@@ -142,7 +142,7 @@ watch(
         <div class="mt-5 overflow-x-auto rounded-xl border border-[#D4A574]">
           <table class="min-w-full border-collapse text-sm">
             <thead class="bg-[#F5E6D3] text-left text-xs uppercase tracking-wide text-[#6B3A2A]">
-              <tr><th class="px-4 py-3">Producto</th><th class="px-4 py-3 text-center">Cantidad</th><th class="px-4 py-3 text-right">Precio unitario</th><th class="px-4 py-3 text-right">Subtotal</th></tr>
+              <tr><th class="px-4 py-3">Producto</th><th class="px-4 py-3 text-center">Cantidad</th><th class="px-4 py-3 text-right">P. Venta</th><th class="px-4 py-3 text-right">Subtotal</th></tr>
             </thead>
             <tbody class="divide-y divide-[#D4A574]/50">
               <tr v-for="item in detalle.items" :key="`${item.ventaId}-${item.productoId ?? item.nombreProducto}`">
