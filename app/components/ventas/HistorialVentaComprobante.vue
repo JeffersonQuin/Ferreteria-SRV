@@ -50,6 +50,8 @@ function formatDate(value: string) {
       </table>
 
       <dl class="receipt-totals">
+        <div v-if="detalle.venta.descuentoCentavos > 0"><dt>Subtotal</dt><dd>{{ formatBs(detalle.venta.totalCentavos + detalle.venta.descuentoCentavos) }}</dd></div>
+        <div v-if="detalle.venta.descuentoCentavos > 0"><dt>Descuento</dt><dd>- {{ formatBs(detalle.venta.descuentoCentavos) }}</dd></div>
         <div><dt>Total</dt><dd>{{ formatBs(detalle.venta.totalCentavos) }}</dd></div>
         <div><dt>Pagado</dt><dd>{{ formatBs(detalle.venta.pagadoCentavos) }}</dd></div>
         <div><dt>Saldo pendiente</dt><dd>{{ formatBs(Math.max(detalle.venta.totalCentavos - detalle.venta.pagadoCentavos, 0)) }}</dd></div>

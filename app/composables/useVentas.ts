@@ -30,6 +30,7 @@ export type VentaRegistrada = {
   totalCentavos: number
   gananciaTotalCentavos: number
   pagadoCentavos: number
+  descuentoCentavos: number
   estado: VentaEstado
   items: VentaRegistradaItem[]
 }
@@ -86,7 +87,8 @@ function parseVentaItem(value: Json): VentaRegistradaItem | null {
   ) return null
 
   const subtotalCalculado = precioVentaUnitarioCentavos * cantidad
-  if (!Number.isSafeInteger(subtotalCalculado) || subtotalCalculado !== subtotalCentavos) return null
+  // Permitir ±1 centavo de tolerancia para redondeo decimal
+  if (!Number.isSafeInteger(subtotalCalculado) || Math.abs(subtotalCalculado - subtotalCentavos) > 1) return null
 
   return {
     productoId,
@@ -111,6 +113,13 @@ export function parseVentaRegistrada(value: Json): VentaRegistrada | null {
   const gananciaTotalCentavos = readMoneyCents(venta.ganancia_total ?? value.ganancia_total, true)
   const pagadoCentavos = readMoneyCents(venta.pagado ?? value.pagado)
   const estado = venta.estado ?? value.estado
+  
+  // Leer descuento (puede ser null o ausente en ventas antiguas)
+  const descuentoRaw = venta.descuento ?? value.descuento
+  const descuentoCentavos = descuentoRaw !== null && descuentoRaw !== undefined
+    ? (readMoneyCents(descuentoRaw) ?? 0)
+    : 0
+  
   const items: VentaRegistradaItem[] = []
 
   for (const rawItem of value.items) {
@@ -137,7 +146,9 @@ export function parseVentaRegistrada(value: Json): VentaRegistrada | null {
   ) return null
 
   const itemsTotalCentavos = items.reduce((total, item) => total + item.subtotalCentavos, 0)
-  if (!Number.isSafeInteger(itemsTotalCentavos) || itemsTotalCentavos !== totalCentavos) return null
+  // Validar que itemsTotal === total + descuento (bruto antes de descuento)
+  const totalEsperado = totalCentavos + descuentoCentavos
+  if (!Number.isSafeInteger(itemsTotalCentavos) || itemsTotalCentavos !== totalEsperado) return null
 
   if (totalCentavos > 0) {
     const estadoEsperado: VentaEstado = pagadoCentavos === 0
@@ -159,6 +170,7 @@ export function parseVentaRegistrada(value: Json): VentaRegistrada | null {
     totalCentavos,
     gananciaTotalCentavos,
     pagadoCentavos,
+    descuentoCentavos,
     estado,
     items
   }
@@ -186,6 +198,7 @@ export function useVentas() {
   const productoSeleccionado = ref<Producto | null>(null)
   const cantidad = ref(1)
   const carrito = ref<CarritoItem[]>([])
+  const descuento = ref('')
   const montoIngresado = ref('')
   const registering = ref(false)
   const error = ref<string | null>(null)
@@ -205,6 +218,13 @@ export function useVentas() {
     )
   )
   const montoIngresadoCentavos = computed(() => toCents(montoIngresado.value))
+  const descuentoCentavos = computed(() => {
+    const c = toCents(descuento.value)
+    return c !== null && c >= 0 ? c : 0
+  })
+  const totalConDescuentoCentavos = computed(() =>
+    Math.max(totalCentavos.value - descuentoCentavos.value, 0)
+  )
   const montoValido = computed(() =>
     montoIngresadoCentavos.value !== null && montoIngresadoCentavos.value >= 0
   )
@@ -212,22 +232,22 @@ export function useVentas() {
     carrito.value.every(item => Number.isInteger(item.cantidad) && item.cantidad > 0)
   )
   const cambioCentavos = computed(() =>
-    montoValido.value ? Math.max((montoIngresadoCentavos.value ?? 0) - totalCentavos.value, 0) : 0
+    montoValido.value ? Math.max((montoIngresadoCentavos.value ?? 0) - totalConDescuentoCentavos.value, 0) : 0
   )
   const saldoPendienteCentavos = computed(() =>
-    montoValido.value ? Math.max(totalCentavos.value - (montoIngresadoCentavos.value ?? 0), 0) : totalCentavos.value
+    montoValido.value ? Math.max(totalConDescuentoCentavos.value - (montoIngresadoCentavos.value ?? 0), 0) : totalConDescuentoCentavos.value
   )
   const estadoPago = computed<VentaEstado>(() => {
     const monto = montoIngresadoCentavos.value ?? 0
     if (monto === 0) return 'No pagado'
-    if (monto >= totalCentavos.value) return 'Completo'
+    if (monto >= totalConDescuentoCentavos.value) return 'Completo'
     return 'Pendiente'
   })
   const pagoMensaje = computed(() => {
     if (!montoValido.value) return 'Ingresa un monto pagado válido, mayor o igual a cero.'
-    if (montoIngresadoCentavos.value === 0) return `Saldo pendiente: ${formatBs(totalCentavos.value)}`
+    if (montoIngresadoCentavos.value === 0) return `Saldo pendiente: ${formatBs(totalConDescuentoCentavos.value)}`
     if (cambioCentavos.value > 0) return `Devolver cambio: ${formatBs(cambioCentavos.value)}`
-    if (montoIngresadoCentavos.value === totalCentavos.value) return 'Pago justo exacto'
+    if (montoIngresadoCentavos.value === totalConDescuentoCentavos.value) return 'Pago justo exacto'
     return `Saldo pendiente: ${formatBs(saldoPendienteCentavos.value)}`
   })
   const canRegister = computed(() =>
@@ -244,6 +264,7 @@ export function useVentas() {
       || productoSeleccionado.value
       || carrito.value.length
       || montoIngresado.value
+      || descuento.value
       || cantidad.value !== 1
     )
   )
@@ -325,6 +346,7 @@ export function useVentas() {
     productoSeleccionado.value = null
     cantidad.value = 1
     carrito.value = []
+    descuento.value = ''
     montoIngresado.value = ''
     error.value = null
     ventaRegistrada.value = null
@@ -362,6 +384,7 @@ export function useVentas() {
       const { data, error: requestError } = await supabase.rpc('registrar_venta', {
         p_cliente_id: clienteSeleccionado.value.id,
         p_monto_ingresado: montoSnapshot / 100,
+        p_descuento: descuentoCentavos.value / 100,
         p_items: carrito.value.map(item => ({
           producto_id: item.productoId,
           cantidad: item.cantidad,
@@ -390,6 +413,7 @@ export function useVentas() {
     productoSeleccionado,
     cantidad,
     carrito,
+    descuento,
     montoIngresado,
     registering,
     error,
@@ -397,6 +421,8 @@ export function useVentas() {
     comprobante,
     numeroArticulos,
     totalCentavos,
+    descuentoCentavos,
+    totalConDescuentoCentavos,
     gananciaCentavos,
     montoIngresadoCentavos,
     montoValido,

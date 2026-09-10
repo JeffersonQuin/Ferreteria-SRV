@@ -132,6 +132,7 @@ watch(
           <div><dt class="text-gray-500">Celular</dt><dd class="font-semibold text-gray-900">{{ detalle.venta.clienteCelular || 'No registrado' }}</dd></div>
           <div><dt class="text-gray-500">Fecha</dt><dd class="font-semibold text-gray-900">{{ formatDate(detalle.venta.fecha) }}</dd></div>
           <div><dt class="text-gray-500">Estado</dt><dd><span class="inline-flex rounded-full px-2.5 py-1 text-xs font-bold" :class="badgeClass(detalle.venta.estado)">{{ detalle.venta.estado }}</span></dd></div>
+          <div v-if="detalle.venta.descuentoCentavos > 0"><dt class="text-gray-500">Descuento</dt><dd class="font-semibold text-red-600">{{ formatBs(detalle.venta.descuentoCentavos) }}</dd></div>
           <div><dt class="text-gray-500">Total</dt><dd class="font-semibold text-gray-900">{{ formatBs(detalle.venta.totalCentavos) }}</dd></div>
           <div><dt class="text-gray-500">Pagado</dt><dd class="font-semibold text-gray-900">{{ formatBs(detalle.venta.pagadoCentavos) }}</dd></div>
           <div><dt class="text-gray-500">Saldo pendiente</dt><dd class="font-semibold text-gray-900">{{ formatBs(Math.max(detalle.venta.totalCentavos - detalle.venta.pagadoCentavos, 0)) }}</dd></div>

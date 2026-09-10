@@ -72,6 +72,7 @@ export type Database = {
           total: number
           ganancia_total: number
           pagado: number
+          descuento: number
           estado: VentaEstado
           created_at: string
         }
@@ -84,6 +85,7 @@ export type Database = {
           total: number
           ganancia_total?: number
           pagado?: number
+          descuento?: number
           estado: VentaEstado
           created_at?: string
         }
@@ -96,6 +98,7 @@ export type Database = {
           total?: number
           ganancia_total?: number
           pagado?: number
+          descuento?: number
           estado?: VentaEstado
           created_at?: string
         }
@@ -180,6 +183,7 @@ export type Database = {
           p_cliente_id: number
           p_monto_ingresado: number
           p_items: Json
+          p_descuento?: number
         }
         Returns: Json
       }

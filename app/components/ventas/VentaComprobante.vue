@@ -45,6 +45,8 @@ function formatDate(value: string) {
     </table>
 
     <dl class="receipt-totals">
+      <div v-if="snapshot.descuentoCentavos > 0"><dt>Subtotal:</dt><dd>{{ formatBs(snapshot.totalCentavos + snapshot.descuentoCentavos) }}</dd></div>
+      <div v-if="snapshot.descuentoCentavos > 0"><dt>Descuento:</dt><dd>- {{ formatBs(snapshot.descuentoCentavos) }}</dd></div>
       <div><dt>Total:</dt><dd>{{ formatBs(snapshot.totalCentavos) }}</dd></div>
       <div><dt>Monto ingresado:</dt><dd>{{ formatBs(snapshot.montoIngresadoCentavos) }}</dd></div>
       <div><dt>Monto aplicado:</dt><dd>{{ formatBs(snapshot.pagadoCentavos) }}</dd></div>

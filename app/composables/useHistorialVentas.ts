@@ -10,6 +10,7 @@ export type HistorialVenta = {
   clienteCelular: string | null
   fecha: string
   totalCentavos: number
+  descuentoCentavos: number
   gananciaTotalCentavos: number
   pagadoCentavos: number
   estado: VentaEstado
@@ -48,7 +49,7 @@ export type PagoVentaResultado = {
   cambioCentavos: number
 }
 
-const VENTA_COLUMNS = 'id,cliente_id,cliente_nombre,cliente_celular,fecha,total,ganancia_total,pagado,estado,created_at'
+const VENTA_COLUMNS = 'id,cliente_id,cliente_nombre,cliente_celular,fecha,total,descuento,ganancia_total,pagado,estado,created_at'
 const ITEM_COLUMNS = 'id,venta_id,producto_id,nombre_producto,cantidad,precio_venta_unitario,subtotal'
 const PAGE_SIZE = 25
 const REPORT_BATCH_SIZE = 500
@@ -88,6 +89,12 @@ function parseHistorialVenta(value: unknown): HistorialVenta | null {
   const totalCentavos = readMoneyCents(value.total)
   const gananciaTotalCentavos = readMoneyCents(value.ganancia_total, true)
   const pagadoCentavos = readMoneyCents(value.pagado)
+  
+  // Leer descuento (puede ser null o ausente en ventas antiguas)
+  const descuentoRaw = value.descuento
+  const descuentoCentavos = descuentoRaw !== null && descuentoRaw !== undefined
+    ? (readMoneyCents(descuentoRaw) ?? 0)
+    : 0
 
   if (
     id === undefined
@@ -123,6 +130,7 @@ function parseHistorialVenta(value: unknown): HistorialVenta | null {
     clienteCelular: value.cliente_celular,
     fecha: value.fecha,
     totalCentavos,
+    descuentoCentavos,
     gananciaTotalCentavos,
     pagadoCentavos,
     estado: value.estado

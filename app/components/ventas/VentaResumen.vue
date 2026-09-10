@@ -5,6 +5,8 @@ import { formatBs } from '~/utils/money'
 const props = defineProps<{
   numeroArticulos: number
   totalCentavos: number
+  descuento: string
+  totalConDescuentoCentavos: number
   gananciaCentavos: number
   montoIngresado: string
   montoValido: boolean
@@ -16,6 +18,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
+  'update:descuento': [value: string]
   'update:montoIngresado': [value: string]
   register: []
   clear: []
@@ -26,6 +29,11 @@ const messageClass = computed(() => {
   if (props.estado === 'Completo') return 'border-green-200 bg-green-50 text-green-700'
   return 'border-orange-200 bg-orange-50 text-orange-700'
 })
+
+const tieneDescuento = computed(() => {
+  const valor = Number(props.descuento)
+  return !Number.isNaN(valor) && valor > 0
+})
 </script>
 
 <template>
@@ -35,8 +43,34 @@ const messageClass = computed(() => {
     <dl class="mt-5 space-y-3 border-b border-gray-200 pb-5 text-sm">
       <div class="flex justify-between gap-4"><dt class="text-gray-600">Nº de artículos</dt><dd class="font-semibold text-gray-800">{{ numeroArticulos }}</dd></div>
       <div class="flex justify-between gap-4"><dt class="text-gray-600">Ganancia total</dt><dd class="font-semibold text-gray-800">{{ formatBs(gananciaCentavos) }}</dd></div>
-      <div class="flex justify-between gap-4 text-lg"><dt class="font-bold text-gray-800">Total</dt><dd class="font-bold text-[#6B3A2A]">{{ formatBs(totalCentavos) }}</dd></div>
+      
+      <template v-if="tieneDescuento">
+        <div class="flex justify-between gap-4"><dt class="text-gray-600">Subtotal</dt><dd class="font-semibold text-gray-500 line-through">{{ formatBs(totalCentavos) }}</dd></div>
+        <div class="flex justify-between gap-4"><dt class="text-gray-600">Descuento</dt><dd class="font-semibold text-red-600">- {{ descuento }} Bs</dd></div>
+        <div class="flex justify-between gap-4 text-lg"><dt class="font-bold text-gray-800">Total a pagar</dt><dd class="font-bold text-[#6B3A2A]">{{ formatBs(totalConDescuentoCentavos) }}</dd></div>
+      </template>
+      <template v-else>
+        <div class="flex justify-between gap-4 text-lg"><dt class="font-bold text-gray-800">Total</dt><dd class="font-bold text-[#6B3A2A]">{{ formatBs(totalCentavos) }}</dd></div>
+      </template>
     </dl>
+
+    <div class="mt-5">
+      <label for="descuento" class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-700">Descuento (opcional)</label>
+      <div class="relative">
+        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-sm font-semibold text-[#8B5A3C]">Bs</span>
+        <input
+          id="descuento"
+          :value="descuento"
+          type="number"
+          min="0"
+          step="0.01"
+          inputmode="decimal"
+          class="w-full rounded-lg border border-[#D4A574] py-2.5 pl-10 pr-3 text-gray-800 focus:border-[#6B3A2A] focus:outline-none focus:ring-2 focus:ring-[#D4A574]"
+          placeholder="0.00"
+          @input="emit('update:descuento', ($event.target as HTMLInputElement).value)"
+        >
+      </div>
+    </div>
 
     <div class="mt-5">
       <label for="monto-ingresado" class="mb-1.5 block text-xs font-bold uppercase tracking-wide text-gray-700">Monto pagado por el cliente</label>

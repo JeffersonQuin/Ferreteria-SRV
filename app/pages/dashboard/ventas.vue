@@ -37,6 +37,7 @@ const {
   clienteSeleccionado,
   productoSeleccionado,
   carrito,
+  descuento,
   montoIngresado,
   registering,
   error: ventaError,
@@ -44,6 +45,8 @@ const {
   comprobante,
   numeroArticulos,
   totalCentavos,
+  descuentoCentavos,
+  totalConDescuentoCentavos,
   gananciaCentavos,
   montoValido,
   estadoPago,
@@ -251,6 +254,8 @@ onMounted(loadCatalogs)
       <VentaResumen
         :numero-articulos="numeroArticulos"
         :total-centavos="totalCentavos"
+        :descuento="descuento"
+        :total-con-descuento-centavos="totalConDescuentoCentavos"
         :ganancia-centavos="gananciaCentavos"
         :monto-ingresado="montoIngresado"
         :monto-valido="montoValido"
@@ -259,6 +264,7 @@ onMounted(loadCatalogs)
         :can-register="canRegister"
         :registering="registering"
         :error="ventaError"
+        @update:descuento="descuento = $event"
         @update:monto-ingresado="montoIngresado = $event"
         @register="registrarVentaConExito"
         @clear="limpiarConConfirmacion"
