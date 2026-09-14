@@ -25,12 +25,23 @@ function formatDate(value: string) {
       aria-label="Comprobante histórico de venta"
     >
       <header class="receipt-header">
-        <h1>Ferretería SRV</h1>
-        <p>Comprobante de venta N.º {{ detalle.venta.id }}</p>
+        <!-- Columna izquierda: identidad del negocio -->
+        <div class="receipt-header-brand">
+          <img src="/Logo.png" alt="Logo Ferretería SRV" class="receipt-logo" />
+          <div class="receipt-brand-text">
+            <p class="receipt-brand-name">FERRETERIA SRV</p>
+            <p class="receipt-brand-address">Dir: Quintana Esq. Pasaje Municipal, Cel: 72344402-72472562, Oruro-Bolivia</p>
+          </div>
+        </div>
+        <!-- Columna derecha: identificación del documento -->
+        <div class="receipt-header-doc">
+          <h1 class="receipt-title">RECIBO</h1>
+          <p class="receipt-doc-number">N.º {{ detalle.venta.id }}</p>
+          <p class="receipt-doc-date"><time :datetime="detalle.venta.fecha">{{ formatDate(detalle.venta.fecha) }}</time></p>
+        </div>
       </header>
 
       <dl class="receipt-details">
-        <div><dt>Fecha</dt><dd>{{ formatDate(detalle.venta.fecha) }}</dd></div>
         <div><dt>Cliente</dt><dd>{{ detalle.venta.clienteNombre }}</dd></div>
         <div><dt>Celular</dt><dd>{{ detalle.venta.clienteCelular || 'No registrado' }}</dd></div>
       </dl>
@@ -53,13 +64,9 @@ function formatDate(value: string) {
         <div v-if="detalle.venta.descuentoCentavos > 0"><dt>Subtotal</dt><dd>{{ formatBs(detalle.venta.totalCentavos + detalle.venta.descuentoCentavos) }}</dd></div>
         <div v-if="detalle.venta.descuentoCentavos > 0"><dt>Descuento</dt><dd>- {{ formatBs(detalle.venta.descuentoCentavos) }}</dd></div>
         <div><dt>Total</dt><dd>{{ formatBs(detalle.venta.totalCentavos) }}</dd></div>
-        <div><dt>Pagado</dt><dd>{{ formatBs(detalle.venta.pagadoCentavos) }}</dd></div>
-        <div><dt>Saldo pendiente</dt><dd>{{ formatBs(Math.max(detalle.venta.totalCentavos - detalle.venta.pagadoCentavos, 0)) }}</dd></div>
-        <div><dt>Estado</dt><dd>{{ detalle.venta.estado }}</dd></div>
       </dl>
 
       <p v-if="detalle.tieneInconsistencia" class="receipt-warning">Nota: se muestra el total autoritativo registrado para esta venta.</p>
-      <footer class="receipt-footer">Gracias por su compra.</footer>
     </article>
   </Teleport>
 </template>

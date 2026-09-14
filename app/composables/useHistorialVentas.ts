@@ -17,6 +17,7 @@ export type HistorialVenta = {
 }
 
 export type HistorialVentaItem = {
+  id: number
   ventaId: number
   productoId: number | null
   nombreProducto: string
@@ -37,6 +38,8 @@ export type HistorialReporte = {
   generadoEn: string
   filtroCliente: string
   filtroEstado: HistorialEstadoFiltro
+  filtroFechaDesde: string
+  filtroFechaHasta: string
   totalVentasCentavos: number
   totalGananciasCentavos: number
 }
@@ -48,6 +51,23 @@ export type PagoVentaResultado = {
   montoAplicadoCentavos: number
   cambioCentavos: number
 }
+
+// ── Resumen diario (Spec 015) ──────────────────────────────────────────────
+export type ResumenDiaVenta = {
+  id: number
+  clienteNombre: string
+  totalCentavos: number
+  gananciaTotalCentavos: number
+  estado: VentaEstado
+}
+
+export type ResumenDia = {
+  fecha: string
+  ventas: ResumenDiaVenta[]
+  totalVentasCentavos: number
+  totalGananciasCentavos: number
+}
+// ──────────────────────────────────────────────────────────────────────────
 
 const VENTA_COLUMNS = 'id,cliente_id,cliente_nombre,cliente_celular,fecha,total,descuento,ganancia_total,pagado,estado,created_at'
 const ITEM_COLUMNS = 'id,venta_id,producto_id,nombre_producto,cantidad,precio_venta_unitario,subtotal'
@@ -89,7 +109,7 @@ function parseHistorialVenta(value: unknown): HistorialVenta | null {
   const totalCentavos = readMoneyCents(value.total)
   const gananciaTotalCentavos = readMoneyCents(value.ganancia_total, true)
   const pagadoCentavos = readMoneyCents(value.pagado)
-  
+
   // Leer descuento (puede ser null o ausente en ventas antiguas)
   const descuentoRaw = value.descuento
   const descuentoCentavos = descuentoRaw !== null && descuentoRaw !== undefined
@@ -140,6 +160,7 @@ function parseHistorialVenta(value: unknown): HistorialVenta | null {
 function parseHistorialItem(value: unknown): HistorialVentaItem | null {
   if (!isRecord(value)) return null
 
+  const id = readPositiveInteger(value.id)
   const ventaId = readPositiveInteger(value.venta_id)
   const productoId = readPositiveInteger(value.producto_id, true)
   const cantidad = readPositiveInteger(value.cantidad)
@@ -147,7 +168,8 @@ function parseHistorialItem(value: unknown): HistorialVentaItem | null {
   const subtotalCentavos = readMoneyCents(value.subtotal)
 
   if (
-    ventaId === undefined
+    id === undefined
+    || ventaId === undefined
     || productoId === undefined
     || cantidad === undefined
     || typeof value.nombre_producto !== 'string'
@@ -156,10 +178,12 @@ function parseHistorialItem(value: unknown): HistorialVentaItem | null {
     || subtotalCentavos === null
   ) return null
 
+  // Tolerancia de ±1 centavo por redondeo de precio_venta_unitario * cantidad
   const subtotalCalculado = precioVentaUnitarioCentavos * cantidad
-  if (!Number.isSafeInteger(subtotalCalculado) || subtotalCalculado !== subtotalCentavos) return null
+  if (!Number.isSafeInteger(subtotalCalculado) || Math.abs(subtotalCalculado - subtotalCentavos) > 1) return null
 
   return {
+    id,
     ventaId,
     productoId,
     nombreProducto: value.nombre_producto.trim(),
@@ -224,7 +248,17 @@ export function useHistorialVentas() {
   const pageSize = PAGE_SIZE
   const busquedaCliente = ref('')
   const estadoFiltro = ref<HistorialEstadoFiltro>('Todos')
-  const filtrosAplicados = ref({ cliente: '', estado: 'Todos' as HistorialEstadoFiltro })
+  // ── Filtros de fecha (Corrección 2 - Spec 012) ─────────────────────────────
+  const fechaDesde = ref('')
+  const fechaHasta = ref('')
+  const errorFecha = ref<string | null>(null)
+  // ──────────────────────────────────────────────────────────────────────────
+  const filtrosAplicados = ref({
+    cliente: '',
+    estado: 'Todos' as HistorialEstadoFiltro,
+    fechaDesde: '',
+    fechaHasta: ''
+  })
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -234,6 +268,11 @@ export function useHistorialVentas() {
   const detalleAdvertencia = ref<string | null>(null)
   const itemsCache = new Map<number, HistorialVentaItem[]>()
 
+  // ── Estado de edición de venta (Corrección 1 - Spec 012) ──────────────────
+  const editing = ref(false)
+  const editError = ref<string | null>(null)
+  // ──────────────────────────────────────────────────────────────────────────
+
   const paying = ref(false)
   const pagoError = ref<string | null>(null)
   const ultimoPago = shallowRef<PagoVentaResultado | null>(null)
@@ -241,6 +280,12 @@ export function useHistorialVentas() {
   const exporting = ref(false)
   const exportError = ref<string | null>(null)
   const reporte = shallowRef<HistorialReporte | null>(null)
+
+  // ── Resumen diario (Spec 015) ────────────────────────────────────────────
+  const resumenDia = shallowRef<ResumenDia | null>(null)
+  const resumenDiaLoading = ref(false)
+  const resumenDiaError = ref<string | null>(null)
+  // ────────────────────────────────────────────────────────────────────────
 
   const totalPages = computed(() => Math.max(1, Math.ceil(totalCount.value / pageSize)))
   const hasPreviousPage = computed(() => page.value > 1)
@@ -254,15 +299,33 @@ export function useHistorialVentas() {
     return value.replace(/[\\%_]/g, match => `\\${match}`)
   }
 
-  function applyFilters<T>(query: T, filters: { cliente: string, estado: HistorialEstadoFiltro }) {
+  // ── Valida coherencia de fechas ────────────────────────────────────────────
+  function validarFechas(desde: string, hasta: string): boolean {
+    if (!desde || !hasta) return true
+    return desde <= hasta
+  }
+
+  function applyFilters<T>(
+    query: T,
+    filters: { cliente: string; estado: HistorialEstadoFiltro; fechaDesde: string; fechaHasta: string }
+  ) {
     let filtered = query as T & {
       ilike: (column: 'cliente_nombre', pattern: string) => typeof filtered
       eq: (column: 'estado', value: VentaEstado) => typeof filtered
+      gte: (column: 'fecha', value: string) => typeof filtered
+      lte: (column: 'fecha', value: string) => typeof filtered
     }
     if (filters.cliente) {
       filtered = filtered.ilike('cliente_nombre', `%${escapeLikePattern(filters.cliente)}%`)
     }
     if (filters.estado !== 'Todos') filtered = filtered.eq('estado', filters.estado)
+    // Filtros de fecha
+    if (filters.fechaDesde) {
+      filtered = filtered.gte('fecha', `${filters.fechaDesde}T00:00:00`)
+    }
+    if (filters.fechaHasta) {
+      filtered = filtered.lte('fecha', `${filters.fechaHasta}T23:59:59`)
+    }
     return filtered
   }
 
@@ -314,11 +377,23 @@ export function useHistorialVentas() {
   function applyCurrentFilters() {
     const next = {
       cliente: busquedaCliente.value.trim(),
-      estado: estadoFiltro.value
+      estado: estadoFiltro.value,
+      fechaDesde: fechaDesde.value,
+      fechaHasta: fechaHasta.value
     }
+
+    // Validar coherencia de fechas antes de aplicar
+    if (!validarFechas(next.fechaDesde, next.fechaHasta)) {
+      errorFecha.value = 'La fecha "Hasta" no puede ser anterior a la fecha "Desde".'
+      return
+    }
+    errorFecha.value = null
+
     if (
       next.cliente === filtrosAplicados.value.cliente
       && next.estado === filtrosAplicados.value.estado
+      && next.fechaDesde === filtrosAplicados.value.fechaDesde
+      && next.fechaHasta === filtrosAplicados.value.fechaHasta
     ) return
 
     filtrosAplicados.value = next
@@ -336,9 +411,26 @@ export function useHistorialVentas() {
     applyCurrentFilters()
   })
 
+  // Watchers para filtros de fecha con debounce de 300 ms
+  watch(fechaDesde, () => {
+    if (searchTimer) clearTimeout(searchTimer)
+    searchTimer = setTimeout(applyCurrentFilters, 300)
+  })
+
+  watch(fechaHasta, () => {
+    if (searchTimer) clearTimeout(searchTimer)
+    searchTimer = setTimeout(applyCurrentFilters, 300)
+  })
+
   onScopeDispose(() => {
     if (searchTimer) clearTimeout(searchTimer)
   })
+
+  function limpiarFiltrosFecha() {
+    fechaDesde.value = ''
+    fechaHasta.value = ''
+    errorFecha.value = null
+  }
 
   async function goToPage(nextPage: number) {
     if (!Number.isInteger(nextPage) || nextPage < 1 || nextPage > totalPages.value || nextPage === page.value) return
@@ -399,7 +491,54 @@ export function useHistorialVentas() {
     detalleError.value = null
     detalleAdvertencia.value = null
     detalleLoading.value = false
+    editError.value = null
   }
+
+  // ── Editar venta: eliminar ítems y recalcular totales (Corrección 1) ────────
+  async function editarVenta(ventaId: number, itemsAEliminar: number[]): Promise<HistorialVenta | null> {
+    if (editing.value) return null
+    editing.value = true
+    editError.value = null
+
+    try {
+      const { data, error: rpcError } = await supabase.rpc('editar_venta', {
+        p_venta_id: ventaId,
+        p_items_a_eliminar: itemsAEliminar
+      })
+
+      if (rpcError) throw new Error(rpcError.message)
+
+      const ventaActualizada = parseHistorialVenta(data)
+      if (!ventaActualizada) {
+        throw new Error('La RPC devolvió un formato inesperado al editar la venta.')
+      }
+
+      // Actualizar la lista del historial
+      ventas.value = ventas.value.map(v => v.id === ventaActualizada.id ? ventaActualizada : v)
+
+      // Actualizar el detalle actual si corresponde a esta venta
+      if (detalle.value?.venta.id === ventaId) {
+        // Invalidar caché de ítems para forzar recarga desde BD en la próxima apertura
+        itemsCache.delete(ventaId)
+      }
+
+      // Invalidar reporte si hay uno activo
+      reporte.value = null
+
+      return ventaActualizada
+    } catch (cause) {
+      console.error('[HistorialVentas] No fue posible editar la venta', cause)
+      editError.value = errorMessage(cause, 'No fue posible guardar los cambios de la venta.')
+      return null
+    } finally {
+      editing.value = false
+    }
+  }
+
+  function clearEditError() {
+    editError.value = null
+  }
+  // ──────────────────────────────────────────────────────────────────────────
 
   async function completePayment(venta: HistorialVenta, monto: string) {
     if (paying.value) return null
@@ -471,7 +610,9 @@ export function useHistorialVentas() {
 
     const filters = {
       cliente: busquedaCliente.value.trim(),
-      estado: estadoFiltro.value
+      estado: estadoFiltro.value,
+      fechaDesde: fechaDesde.value,
+      fechaHasta: fechaHasta.value
     }
     const collected: HistorialVenta[] = []
 
@@ -510,6 +651,8 @@ export function useHistorialVentas() {
         generadoEn: new Date().toISOString(),
         filtroCliente: filters.cliente,
         filtroEstado: filters.estado,
+        filtroFechaDesde: filters.fechaDesde,
+        filtroFechaHasta: filters.fechaHasta,
         totalVentasCentavos,
         totalGananciasCentavos
       }
@@ -528,6 +671,66 @@ export function useHistorialVentas() {
     exportError.value = null
   }
 
+  // ── Resumen diario (Spec 015) ────────────────────────────────────────────
+  async function loadResumenDia(fecha: string): Promise<ResumenDia | null> {
+    if (resumenDiaLoading.value) return null
+    resumenDiaLoading.value = true
+    resumenDiaError.value = null
+
+    try {
+      const { data, error: queryError } = await supabase
+        .from('ventas')
+        .select(VENTA_COLUMNS)
+        .gte('fecha', `${fecha}T00:00:00`)
+        .lte('fecha', `${fecha}T23:59:59`)
+        .order('fecha', { ascending: true })
+        .order('id', { ascending: true })
+
+      if (queryError) throw new Error(queryError.message)
+
+      const parsed = (data ?? []).map(parseHistorialVenta)
+      if (parsed.some(v => v === null)) {
+        throw new Error('Supabase devolvió una venta con un formato no válido.')
+      }
+      const ventasDia = parsed as HistorialVenta[]
+
+      let totalVentasCentavos = 0
+      let totalGananciasCentavos = 0
+      for (const v of ventasDia) {
+        totalVentasCentavos = safeAdd(totalVentasCentavos, v.totalCentavos)
+        totalGananciasCentavos = safeAdd(totalGananciasCentavos, v.gananciaTotalCentavos)
+      }
+
+      resumenDia.value = {
+        fecha,
+        ventas: ventasDia.map(v => ({
+          id: v.id,
+          clienteNombre: v.clienteNombre,
+          totalCentavos: v.totalCentavos,
+          gananciaTotalCentavos: v.gananciaTotalCentavos,
+          estado: v.estado
+        })),
+        totalVentasCentavos,
+        totalGananciasCentavos
+      }
+      return resumenDia.value
+    } catch (cause) {
+      console.error('[HistorialVentas] No fue posible cargar el resumen del día', cause)
+      resumenDiaError.value = errorMessage(cause, 'No fue posible cargar el resumen del día.')
+      resumenDia.value = null
+      return null
+    } finally {
+      resumenDiaLoading.value = false
+    }
+  }
+
+  function clearResumenDia() {
+    resumenDia.value = null
+    resumenDiaError.value = null
+    resumenDiaLoading.value = false
+  }
+  // ────────────────────────────────────────────────────────────────────────
+
   return {
     ventas,
     totalCount,
@@ -538,12 +741,17 @@ export function useHistorialVentas() {
     hasNextPage,
     busquedaCliente,
     estadoFiltro,
+    fechaDesde,
+    fechaHasta,
+    errorFecha,
     loading,
     error,
     detalle,
     detalleLoading,
     detalleError,
     detalleAdvertencia,
+    editing,
+    editError,
     paying,
     pagoError,
     ultimoPago,
@@ -554,9 +762,17 @@ export function useHistorialVentas() {
     goToPage,
     loadDetail,
     clearDetail,
+    editarVenta,
+    clearEditError,
+    limpiarFiltrosFecha,
     completePayment,
     clearPaymentState,
     loadReport,
-    clearReport
+    clearReport,
+    resumenDia,
+    resumenDiaLoading,
+    resumenDiaError,
+    loadResumenDia,
+    clearResumenDia
   }
 }

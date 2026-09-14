@@ -1,6 +1,7 @@
 @page {
   size: A4;
-  margin: 12mm;
+  /* margin: 0 suprime el espacio donde el navegador renderiza la URL y el título */
+  margin: 0;
 }
 
 [data-print-receipt] {
@@ -45,21 +46,78 @@
   }
 
   .receipt-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 6mm;
     margin-bottom: 8mm;
     padding-bottom: 4mm;
     border-bottom: 2px solid #222;
-    text-align: center;
   }
 
-  .receipt-header h1 {
+  /* Columna izquierda: logo al lado del nombre + dirección */
+  .receipt-header-brand {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 3mm;
+  }
+
+  .receipt-logo {
+    height: 52px;
+    width: auto;
+    display: block;
+    flex-shrink: 0;
+  }
+
+  /* Bloque de texto a la derecha del logo */
+  .receipt-brand-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1mm;
+  }
+
+  .receipt-brand-name {
+    margin: 0;
+    font-size: 11.5pt;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1.1;
+  }
+
+  .receipt-brand-address {
+    margin: 0;
+    font-size: 7.5pt;
+    color: #555 !important;
+    max-width: 72mm;
+    line-height: 1.3;
+  }
+
+  /* Columna derecha: título RECIBO + número + fecha */
+  .receipt-header-doc {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1mm;
+    text-align: right;
+  }
+
+  .receipt-title {
     margin: 0;
     font-size: 20pt;
-    letter-spacing: 0.04em;
+    font-weight: 700;
+    letter-spacing: 0.06em;
   }
 
-  .receipt-header p {
-    margin: 2mm 0 0;
-    font-size: 11pt;
+  .receipt-doc-number {
+    margin: 0;
+    font-size: 10pt;
+  }
+
+  .receipt-doc-date {
+    margin: 0;
+    font-size: 9pt;
+    color: #444 !important;
   }
 
   .receipt-details,
@@ -76,7 +134,7 @@
     display: flex;
     justify-content: space-between;
     gap: 8mm;
-    padding: 1.2mm 0;
+    padding: 0.5mm 0;
   }
 
   .receipt-details dt,
@@ -99,7 +157,7 @@
 
   .receipt-table th,
   .receipt-table td {
-    padding: 2.5mm 2mm;
+    padding: 1mm 2mm;
     border: 1px solid #444;
     color: #111 !important;
     text-align: right;
@@ -169,12 +227,13 @@
     width: 100%;
     min-height: 100%;
     margin: 0;
-    padding: 0;
+    padding: 12mm;
+    box-sizing: border-box;
     background: #fff !important;
     color: #111 !important;
     font-family: Arial, Helvetica, sans-serif;
     font-size: 10pt;
-    line-height: 1.35;
+    line-height: 1.2;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }

@@ -33,6 +33,12 @@ function formatDate(value: string) {
       <dl class="report-filters">
         <div><dt>Cliente</dt><dd>{{ reporte.filtroCliente || 'Todos' }}</dd></div>
         <div><dt>Estado</dt><dd>{{ reporte.filtroEstado === 'Todos' ? 'Todos los estados' : reporte.filtroEstado }}</dd></div>
+        <div v-if="reporte.filtroFechaDesde || reporte.filtroFechaHasta">
+          <dt>Período</dt>
+          <dd>
+            {{ reporte.filtroFechaDesde || '—' }} / {{ reporte.filtroFechaHasta || '—' }}
+          </dd>
+        </div>
         <div><dt>Ventas incluidas</dt><dd>{{ reporte.ventas.length }}</dd></div>
       </dl>
 
