@@ -2,11 +2,15 @@
 import type { Producto } from '~/composables/useProductos'
 import { formatBs, toCents } from '~/utils/money'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   productos: Producto[]
   modelValue: Producto | null
   disabled?: boolean
-}>()
+  hideCreate?: boolean
+}>(), {
+  disabled: false,
+  hideCreate: false
+})
 
 const emit = defineEmits<{
   'update:modelValue': [value: Producto | null]

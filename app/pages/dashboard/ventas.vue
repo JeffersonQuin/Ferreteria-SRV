@@ -2,13 +2,12 @@
 import AutocompleteCliente from '~/components/ventas/AutocompleteCliente.vue'
 import ClienteFormModal from '~/components/clientes/ClienteFormModal.vue'
 import ModalAgregarProducto from '~/components/ventas/ModalAgregarProducto.vue'
-import ProductoFormModal from '~/components/productos/ProductoFormModal.vue'
 import VentaCarrito from '~/components/ventas/VentaCarrito.vue'
 import VentaComprobante from '~/components/ventas/VentaComprobante.vue'
 import VentaExitoModal from '~/components/ventas/VentaExitoModal.vue'
 import VentaResumen from '~/components/ventas/VentaResumen.vue'
 import type { ClientePayload } from '~/composables/useClientes'
-import type { ProductoPayload } from '~/composables/useProductos'
+import type { Producto, ProductoPayload } from '~/composables/useProductos'
 
 definePageMeta({ middleware: 'auth' })
 useHead({ title: 'Registro de Ventas - Ferretería SRV' })
@@ -62,9 +61,9 @@ const {
 } = useVentas()
 
 const showClienteModal = ref(false)
-const showProductoModal = ref(false)
 const showSuccessModal = ref(false)
 const showModalAgregar = ref(false)
+const productoGuardado = ref<Producto | null>(null)
 const printError = ref<string | null>(null)
 const reopenSuccessButton = ref<HTMLButtonElement | null>(null)
 const catalogLoading = computed(() => loadingClientes.value || loadingProductos.value)
@@ -93,23 +92,15 @@ async function crearClienteRapido(payload: ClientePayload) {
   closeClienteModal()
 }
 
-// ── Producto form modal (creación rápida desde el modal de agregar) ───────────
-function openProductoModal() {
-  clearProductoError()
-  showProductoModal.value = true
-}
-
-function closeProductoModal() {
-  if (savingProducto.value) return
-  showProductoModal.value = false
-  clearProductoError()
-}
-
+// ── Creación rápida de producto (desde ModalAgregarProducto) ─────────────────
 async function crearProductoRapido(payload: ProductoPayload) {
+  console.log('[ventas.vue] crearProductoRapido called with payload:', payload)
+  productoGuardado.value = null
   const created = await createProducto(payload)
+  console.log('[ventas.vue] createProducto result:', created)
   if (!created) return
-  productoSeleccionado.value = created
-  closeProductoModal()
+  productoGuardado.value = created
+  console.log('[ventas.vue] productoGuardado set to:', created)
 }
 
 // ── Modal agregar producto ────────────────────────────────────────────────────
@@ -282,25 +273,18 @@ onMounted(loadCatalogs)
       @close="closeClienteModal"
     />
 
-    <!-- Modal de creación rápida de producto (abierto desde ModalAgregarProducto) -->
-    <ProductoFormModal
-      :open="showProductoModal"
-      :saving="savingProducto"
-      :error="productoMutationError"
-      mode="create"
-      :initial-values="{ nombre: '', descripcion: '', precioCosto: '', precioVenta: '' }"
-      @submit="crearProductoRapido"
-      @close="closeProductoModal"
-    />
-
-    <!-- Modal para seleccionar producto y cantidad -->
+    <!-- Modal para seleccionar / crear producto y agregar al carrito -->
     <ModalAgregarProducto
       :open="showModalAgregar"
       :productos="productos"
       :disabled="catalogLoading || registering || Boolean(ventaRegistrada)"
+      :saving-producto="savingProducto"
+      :producto-mutation-error="productoMutationError"
+      :producto-guardado="productoGuardado"
       @close="cerrarModalAgregar"
-      @create="openProductoModal"
       @agregar="onAgregarProducto"
+      @crear-producto="crearProductoRapido"
+      @clear-producto-error="clearProductoError"
     />
 
     <VentaExitoModal
