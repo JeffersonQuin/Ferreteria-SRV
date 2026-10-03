@@ -2,6 +2,7 @@
 import HistorialDetalleModal from '~/components/ventas/HistorialDetalleModal.vue'
 import HistorialPagoModal from '~/components/ventas/HistorialPagoModal.vue'
 import HistorialResumenDiaModal from '~/components/ventas/HistorialResumenDiaModal.vue'
+import HistorialResumenPorDiaReporte from '~/components/ventas/HistorialResumenPorDiaReporte.vue'
 import HistorialVentaComprobante from '~/components/ventas/HistorialVentaComprobante.vue'
 import HistorialVentasReporte from '~/components/ventas/HistorialVentasReporte.vue'
 import type { HistorialVenta, HistorialVentaDetalle } from '~/composables/useHistorialVentas'
@@ -53,20 +54,30 @@ const {
   loadResumenDia
 } = useHistorialVentas()
 
+// ── Resumen por día (Spec 017) ──────────────────────────────────────────────
+const {
+  resumenPorDia,
+  loading: loadingResumenPorDia,
+  error: errorResumenPorDia,
+  loadResumenPorDia,
+  clearResumenPorDia
+} = useResumenPorDia()
+// ────────────────────────────────────────────────────────────────────────────
+
 const showDetailModal = ref(false)
 const showPaymentModal = ref(false)
 const showResumenDiaModal = ref(false)
 const selectedDetailVenta = shallowRef<HistorialVenta | null>(null)
 const selectedPaymentVenta = shallowRef<HistorialVenta | null>(null)
 const printReceipt = shallowRef<HistorialVentaDetalle | null>(null)
-const printMode = ref<'receipt' | 'report' | null>(null)
+const printMode = ref<'receipt' | 'report' | 'resumen-por-dia' | null>(null)
 const printing = ref(false)
 const printError = ref<string | null>(null)
 const successMessage = ref<string | null>(null)
 
 const firstVisible = computed(() => totalCount.value === 0 ? 0 : (page.value - 1) * pageSize + 1)
 const lastVisible = computed(() => Math.min(page.value * pageSize, totalCount.value))
-const actionsDisabled = computed(() => loading.value || paying.value || exporting.value || printing.value || editing.value)
+const actionsDisabled = computed(() => loading.value || paying.value || exporting.value || printing.value || editing.value || loadingResumenPorDia.value)
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('es-BO', {
@@ -208,6 +219,29 @@ async function exportPdf() {
   }
 }
 
+// ── Informe de ventas por día (Spec 017) ────────────────────────────────────
+async function exportResumenPorDia() {
+  if (actionsDisabled.value) return
+  printing.value = true
+  printError.value = null
+  clearResumenPorDia()
+
+  try {
+    const loaded = await loadResumenPorDia()
+    if (!loaded) throw new Error(errorResumenPorDia.value || 'No fue posible preparar el resumen por día.')
+    printMode.value = 'resumen-por-dia'
+    await invokePrint()
+  } catch (cause) {
+    console.error('[HistorialVentas] No fue posible imprimir el resumen por día', cause)
+    printError.value = cause instanceof Error ? cause.message : 'No fue posible abrir la impresión del resumen por día.'
+  } finally {
+    printMode.value = null
+    printing.value = false
+    clearResumenPorDia()
+  }
+}
+// ────────────────────────────────────────────────────────────────────────────
+
 onMounted(fetchVentas)
 </script>
 
@@ -230,6 +264,19 @@ onMounted(fetchVentas)
             <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/>
           </svg>
           Resumen del día
+        </button>
+        <button
+          type="button"
+          class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[#6B3A2A] px-5 py-2.5 text-sm font-semibold text-[#6B3A2A] hover:bg-[#F5E6D3] focus:outline-none focus:ring-2 focus:ring-[#D4A574] disabled:cursor-not-allowed disabled:opacity-60"
+          :disabled="actionsDisabled || loadingResumenPorDia"
+          @click="exportResumenPorDia"
+        >
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="18" rx="2"/>
+            <path d="M16 2v4M8 2v4M3 10h18"/>
+            <path d="M8 14h.01M12 14h.01M16 14h.01"/>
+          </svg>
+          {{ loadingResumenPorDia ? 'Preparando...' : printing && printMode === 'resumen-por-dia' ? 'Abriendo...' : 'Informe de ventas' }}
         </button>
         <button
           type="button"
@@ -515,4 +562,5 @@ onMounted(fetchVentas)
 
   <HistorialVentaComprobante :detalle="printReceipt" :active="printMode === 'receipt'" />
   <HistorialVentasReporte :reporte="reporte" :active="printMode === 'report'" />
+  <HistorialResumenPorDiaReporte :resumen="resumenPorDia" :active="printMode === 'resumen-por-dia'" />
 </template>

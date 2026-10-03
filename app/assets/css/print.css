@@ -387,4 +387,39 @@
     text-align: center;
     font-size: 8pt;
   }
+
+  /* Estilos específicos para el reporte de resumen por día (7 columnas) */
+  .report-table-resumen-dia th:first-child,
+  .report-table-resumen-dia td.col-fecha {
+    width: 14%;
+    text-align: left;
+  }
+
+  .report-table-resumen-dia th:nth-child(2),
+  .report-table-resumen-dia th:nth-child(3),
+  .report-table-resumen-dia th:nth-child(4),
+  .report-table-resumen-dia th:nth-child(5),
+  .report-table-resumen-dia td.col-cantidad {
+    width: 11%;
+    text-align: center;
+  }
+
+  .report-table-resumen-dia th:nth-child(6),
+  .report-table-resumen-dia th:nth-child(7),
+  .report-table-resumen-dia td.col-monto {
+    width: 19.5%;
+    text-align: right;
+  }
+
+  .report-table-resumen-dia tfoot td.col-label-total {
+    text-align: right;
+    font-weight: bold;
+    font-size: 9pt;
+  }
+
+  .report-table-resumen-dia tfoot td.col-monto-total {
+    font-weight: bold;
+    text-align: right;
+    font-size: 9pt;
+  }
 }
