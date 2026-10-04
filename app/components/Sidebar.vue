@@ -7,11 +7,14 @@ const links = [
   { label: 'Productos', to: '/dashboard/productos', exact: false },
   { label: 'Ventas', to: '/dashboard/ventas', exact: false },
   { label: 'Historial', to: '/dashboard/historial', exact: false },
-  { label: 'Cotizaciones', to: '/dashboard/cotizaciones', exact: false }
+  { label: 'Cotizaciones', to: '/dashboard/cotizaciones', exact: false },
+  { label: 'Historial Cotizaciones', to: '/dashboard/historial-cotizaciones', exact: false }
 ]
 
 function isActive(to: string, exact: boolean) {
-  return exact ? route.path === to : route.path.startsWith(to)
+  if (exact) return route.path === to
+  // Evita que "/dashboard/cotizaciones" se marque activo dentro de "/dashboard/cotizaciones-..."
+  return route.path === to || route.path.startsWith(`${to}/`)
 }
 </script>
 
@@ -42,6 +45,12 @@ function isActive(to: string, exact: boolean) {
         <svg v-else-if="link.to === '/dashboard/cotizaciones'" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z" />
           <path d="M14 2v6h6M8 13h8M8 17h8M8 9h2" />
+        </svg>
+        <svg v-else-if="link.to === '/dashboard/historial-cotizaciones'" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h5" />
+          <path d="M14 2v6h6M8 9h2M8 13h3" />
+          <circle cx="17" cy="17" r="5" />
+          <path d="M17 14.5V17l1.5 1" />
         </svg>
         <svg v-else class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true">
           <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />

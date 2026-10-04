@@ -101,7 +101,7 @@ function isVentaEstado(value: unknown): value is VentaEstado {
   return value === 'Completo' || value === 'Pendiente' || value === 'No pagado'
 }
 
-function parseHistorialVenta(value: unknown): HistorialVenta | null {
+export function parseHistorialVenta(value: unknown): HistorialVenta | null {
   if (!isRecord(value)) return null
 
   const id = readPositiveInteger(value.id)
@@ -157,7 +157,7 @@ function parseHistorialVenta(value: unknown): HistorialVenta | null {
   }
 }
 
-function parseHistorialItem(value: unknown): HistorialVentaItem | null {
+export function parseHistorialItem(value: unknown): HistorialVentaItem | null {
   if (!isRecord(value)) return null
 
   const id = readPositiveInteger(value.id)
