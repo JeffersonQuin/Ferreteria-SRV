@@ -232,6 +232,7 @@ onMounted(fetchCotizaciones)
 
 <template>
   <section aria-labelledby="historial-cotizaciones-title" class="no-print min-w-0">
+    <VolverDashboard />
     <header class="mb-6">
       <p class="mb-1 text-sm font-semibold uppercase tracking-wide text-[#8B5A3C]">Operaciones</p>
       <h1 id="historial-cotizaciones-title" class="text-2xl font-bold text-[#6B3A2A] sm:text-3xl">Historial de cotizaciones</h1>

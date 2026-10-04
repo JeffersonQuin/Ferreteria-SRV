@@ -124,6 +124,7 @@ onMounted(fetchProductos)
 
 <template>
   <section aria-labelledby="productos-title">
+    <VolverDashboard />
     <header class="mb-6">
       <p class="mb-1 text-sm font-semibold uppercase tracking-wide text-[#8B5A3C]">Catálogo</p>
       <h1 id="productos-title" class="text-2xl font-bold text-[#6B3A2A] sm:text-3xl">Gestión de Productos</h1>

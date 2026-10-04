@@ -247,6 +247,7 @@ onMounted(fetchVentas)
 
 <template>
   <section aria-labelledby="historial-title" class="no-print min-w-0">
+    <VolverDashboard />
     <header class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
       <div>
         <p class="mb-1 text-sm font-semibold uppercase tracking-wide text-[#8B5A3C]">Operaciones</p>

@@ -179,6 +179,7 @@ onMounted(loadCatalogs)
 
 <template>
   <section aria-labelledby="ventas-title" class="no-print min-w-0">
+    <VolverDashboard />
     <header class="mb-6">
       <p class="mb-1 text-sm font-semibold uppercase tracking-wide text-[#8B5A3C]">Operaciones</p>
       <h1 id="ventas-title" class="text-2xl font-bold text-[#6B3A2A] sm:text-3xl">Registro de Ventas</h1>
