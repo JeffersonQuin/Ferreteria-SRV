@@ -3,12 +3,13 @@
 // escribir nada, por lo que no consume almacenamiento.
 // Lo invoca el Cron Job de Vercel una vez al día (ver vercel.json).
 
-export default defineEventHandler(async () => {
-  const url = process.env.SUPABASE_URL
-  const key = process.env.SUPABASE_KEY
+export default defineEventHandler(async (event) => {
+  const config = useRuntimeConfig(event)
+  const url = config.supabaseUrl
+  const key = config.supabaseKey
 
   if (!url || !key) {
-    setResponseStatus(useEvent(), 500)
+    setResponseStatus(event, 500)
     return { ok: false, error: 'Faltan SUPABASE_URL o SUPABASE_KEY en el entorno.' }
   }
 
@@ -35,7 +36,7 @@ export default defineEventHandler(async () => {
     }
   } catch (cause) {
     console.error('[keep-alive] Falló el ping a Supabase', cause)
-    setResponseStatus(useEvent(), 502)
+    setResponseStatus(event, 502)
     return {
       ok: false,
       error: 'No fue posible contactar a Supabase.',

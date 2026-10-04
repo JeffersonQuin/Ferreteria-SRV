@@ -10,6 +10,13 @@ export default defineNuxtConfig({
     }
   },
   css: ['~/assets/css/print.css'],
+  runtimeConfig: {
+    // Disponibles solo en el servidor (p. ej. el endpoint /api/keep-alive).
+    // Se completan en producción con las variables NUXT_SUPABASE_URL / NUXT_SUPABASE_KEY,
+    // y si no, con las SUPABASE_URL / SUPABASE_KEY que ya usa el módulo de Supabase.
+    supabaseUrl: process.env.SUPABASE_URL,
+    supabaseKey: process.env.SUPABASE_KEY
+  },
   modules: [
     '@vite-pwa/nuxt',
     '@nuxtjs/supabase',
