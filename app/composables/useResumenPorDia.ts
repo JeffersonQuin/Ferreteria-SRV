@@ -151,7 +151,7 @@ export function useResumenPorDia() {
 
       for (const venta of collected) {
         // Extraer solo la fecha (YYYY-MM-DD) sin la hora
-        const fechaDia = venta.fecha.split('T')[0]
+        const fechaDia = venta.fecha.split('T')[0] ?? venta.fecha
         
         const actual = porDia.get(fechaDia) ?? {
           ventas: 0,
