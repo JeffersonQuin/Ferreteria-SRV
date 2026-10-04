@@ -498,6 +498,12 @@ onMounted(fetchVentas)
                       <path d="m15 4 2 2 4-4"/>
                     </svg>
                   </button>
+                  <!-- Eliminar venta (incluye modal de confirmación) -->
+                  <VentasEliminarVentaBoton
+                    :venta="venta"
+                    :disabled="actionsDisabled"
+                    @deleted="(id: number) => { successMessage = `Venta N.º ${id} eliminada correctamente.`; fetchVentas() }"
+                  />
                 </div>
               </td>
             </tr>
