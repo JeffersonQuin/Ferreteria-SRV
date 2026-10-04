@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ComprobanteSnapshot } from '~/composables/useVentas'
-import { formatBs } from '~/utils/money'
+import { formatMonto } from '~/utils/money'
 
 defineProps<{ snapshot: ComprobanteSnapshot | null }>()
 
@@ -15,50 +15,51 @@ function formatDate(value: string) {
 <template>
   <section v-if="snapshot" data-print-receipt aria-label="Comprobante de venta">
     <header class="receipt-header">
-      <!-- Columna izquierda: identidad del negocio -->
+      <!-- Izquierda: identidad del negocio -->
       <div class="receipt-header-brand">
-        <img src="/Logo.png" alt="Logo Ferretería SRV" class="receipt-logo" />
-        <div class="receipt-brand-text">
-          <p class="receipt-brand-name">FERRETERIA SRV</p>
-          <p class="receipt-brand-address">Dir: Quintana Esq. Pasaje Municipal, Cel: 72344402-72472562, Oruro-Bolivia</p>
-        </div>
+        <p class="receipt-brand-name">FERRETERIA SRV</p>
+        <p class="receipt-brand-address">Dir. Quintana Esq. Pasaje Municipal</p>
+        <p class="receipt-brand-address">Cel. 72344402-72472562</p>
+        <p class="receipt-brand-address">Oruro-Bolivia</p>
       </div>
-      <!-- Columna derecha: identificación del documento -->
-      <div class="receipt-header-doc">
-        <h1 class="receipt-title">RECIBO</h1>
-        <p class="receipt-doc-number">N.º {{ snapshot.id }}</p>
-        <p class="receipt-doc-date"><time :datetime="snapshot.fecha">{{ formatDate(snapshot.fecha) }}</time></p>
-      </div>
+      <!-- Centro: título -->
+      <h1 class="receipt-title">RECIBO</h1>
+      <!-- Derecha: número de recibo -->
+      <p class="receipt-doc-number">N°{{ snapshot.id }}</p>
     </header>
 
     <dl class="receipt-details">
-      <div><dt>Cliente</dt><dd>{{ snapshot.clienteNombre }}</dd></div>
-      <div><dt>Celular</dt><dd>{{ snapshot.clienteCelular || 'No registrado' }}</dd></div>
+      <div><dt>Señor(es):</dt><dd>{{ snapshot.clienteNombre }}</dd></div>
+      <div><dt>Celular:</dt><dd>{{ snapshot.clienteCelular || 'No registrado' }}</dd></div>
+      <div><dt>Fecha:</dt><dd><time :datetime="snapshot.fecha">{{ formatDate(snapshot.fecha) }}</time></dd></div>
     </dl>
 
     <table class="receipt-table">
       <thead>
         <tr>
-          <th scope="col">Producto</th>
           <th scope="col">Cant.</th>
-          <th scope="col">P. Venta</th>
-          <th scope="col">Subtotal</th>
+          <th scope="col">Producto</th>
+          <th scope="col">Precio Unitario</th>
+          <th scope="col">Sub total</th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="(item, index) in snapshot.items" :key="`${item.productoId}-${index}`">
-          <td>{{ item.nombreProducto }}</td>
           <td>{{ item.cantidad }}</td>
-          <td>{{ formatBs(item.precioVentaUnitarioCentavos) }}</td>
-          <td>{{ formatBs(item.subtotalCentavos) }}</td>
+          <td>{{ item.nombreProducto }}</td>
+          <td>{{ formatMonto(item.precioVentaUnitarioCentavos) }}</td>
+          <td>{{ formatMonto(item.subtotalCentavos) }}</td>
         </tr>
       </tbody>
     </table>
 
-    <dl class="receipt-totals">
-      <div v-if="snapshot.descuentoCentavos > 0"><dt>Subtotal</dt><dd>{{ formatBs(snapshot.totalCentavos + snapshot.descuentoCentavos) }}</dd></div>
-      <div v-if="snapshot.descuentoCentavos > 0"><dt>Descuento</dt><dd>- {{ formatBs(snapshot.descuentoCentavos) }}</dd></div>
-      <div><dt>Total</dt><dd>{{ formatBs(snapshot.totalCentavos) }}</dd></div>
-    </dl>
+    <div class="receipt-bottom">
+      <p class="receipt-note">Este recibo no es válido para crédito fiscal.</p>
+      <dl class="receipt-totals">
+        <div v-if="snapshot.descuentoCentavos > 0"><dt>Subtotal Bs:</dt><dd>{{ formatMonto(snapshot.totalCentavos + snapshot.descuentoCentavos) }}</dd></div>
+        <div v-if="snapshot.descuentoCentavos > 0"><dt>Descuento Bs:</dt><dd>{{ formatMonto(snapshot.descuentoCentavos) }}</dd></div>
+        <div class="receipt-total"><dt>Total Bs:</dt><dd>{{ formatMonto(snapshot.totalCentavos) }}</dd></div>
+      </dl>
+    </div>
   </section>
 </template>
