@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AutocompleteProducto from '~/components/ventas/AutocompleteProducto.vue'
 import type { Producto, ProductoPayload } from '~/composables/useProductos'
-import { toCents } from '~/utils/money'
+import { formatBs, toCents } from '~/utils/money'
 
 const props = defineProps<{
   open: boolean
@@ -38,6 +38,12 @@ const cantidadNumerica = computed(() => {
 const canAccept = computed(() =>
   productoSeleccionado.value !== null && cantidadNumerica.value !== null
 )
+
+const precioSeleccionado = computed(() => {
+  if (!productoSeleccionado.value) return null
+  const centavos = toCents(productoSeleccionado.value.precio_venta)
+  return centavos === null ? null : formatBs(centavos)
+})
 
 // ── Vista crear ──────────────────────────────────────────────────────────────
 const formNombre = ref('')
@@ -104,6 +110,13 @@ function intentarAceptar() {
 }
 
 function onCantidadInput() {
+  mostrarErrorCantidad.value = false
+}
+
+// Botones − / + del selector de cantidad (solo mueven el mismo campo de texto).
+function cambiarCantidad(delta: number) {
+  const actual = cantidadNumerica.value ?? 0
+  cantidadStr.value = String(Math.max(1, actual + delta))
   mostrarErrorCantidad.value = false
 }
 
@@ -209,7 +222,7 @@ function onKeydown(event: KeyboardEvent) {
     >
       <div
         v-if="open"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+        class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:px-4"
         aria-modal="true"
         role="dialog"
         :aria-labelledby="vistaActual === 'seleccion' ? 'modal-agregar-titulo' : 'modal-crear-titulo'"
@@ -218,134 +231,23 @@ function onKeydown(event: KeyboardEvent) {
       >
         <div
           ref="dialogEl"
-          class="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl sm:p-6"
+          class="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-xl sm:rounded-3xl sm:p-6"
           @click.stop
         >
+          <span class="mx-auto mb-4 block h-1.5 w-10 rounded-full bg-[#E3CFB4] sm:hidden" aria-hidden="true" />
 
           <!-- ══════════════════════════════════════════════════ -->
           <!-- VISTA: SELECCIÓN                                   -->
           <!-- ══════════════════════════════════════════════════ -->
           <template v-if="vistaActual === 'seleccion'">
-            <!-- Encabezado -->
             <div class="mb-5 flex items-center justify-between gap-3">
-              <h2 id="modal-agregar-titulo" class="text-lg font-bold text-[#6B3A2A]">
+              <h2 id="modal-agregar-titulo" class="text-xl font-bold text-[#3A1C12]">
                 Agregar producto
               </h2>
-              <div class="flex items-center gap-2">
-                <!-- Botón "Nuevo producto" -->
-                <button
-                  type="button"
-                  :disabled="disabled || savingProducto"
-                  class="flex items-center gap-1.5 rounded-lg border border-[#6B3A2A] px-3 py-1.5 text-sm font-semibold text-[#6B3A2A] hover:bg-[#F5E6D3] focus:outline-none focus:ring-2 focus:ring-[#D4A574] disabled:cursor-not-allowed disabled:opacity-50"
-                  @click="irACrear"
-                >
-                  <svg viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4" aria-hidden="true">
-                    <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
-                  </svg>
-                  Nuevo
-                </button>
-                <!-- Botón cerrar -->
-                <button
-                  type="button"
-                  aria-label="Cerrar modal"
-                  class="flex h-9 w-9 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#D4A574]"
-                  @click="cancelar"
-                >
-                  <svg viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5" aria-hidden="true">
-                    <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            <!-- Autocomplete de producto -->
-            <!-- El evento @create del autocomplete ahora abre la vista interna -->
-            <div class="mb-4">
-              <AutocompleteProducto
-                v-model="productoSeleccionado"
-                :productos="productos"
-                :disabled="disabled"
-                @create="irACrear"
-              />
-            </div>
-
-            <!-- Campo cantidad -->
-            <div class="mb-5">
-              <label for="modal-cantidad" class="mb-1.5 block text-sm font-semibold text-gray-700">
-                Cantidad
-              </label>
-              <input
-                id="modal-cantidad"
-                ref="cantidadInput"
-                v-model="cantidadStr"
-                type="number"
-                min="1"
-                step="1"
-                inputmode="numeric"
-                placeholder="Ej: 3"
-                :disabled="disabled"
-                class="w-full rounded-lg border px-3 py-2.5 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 disabled:bg-gray-100"
-                :class="mostrarErrorCantidad
-                  ? 'border-red-400 focus:border-red-500 focus:ring-red-300'
-                  : 'border-[#D4A574] focus:border-[#6B3A2A] focus:ring-[#D4A574]'"
-                @input="onCantidadInput"
-              >
-              <p
-                v-if="mostrarErrorCantidad"
-                role="alert"
-                class="mt-1.5 text-sm text-red-600"
-              >
-                Ingresa la cantidad
-              </p>
-            </div>
-
-            <!-- Botones -->
-            <div class="flex justify-end gap-3">
-              <button
-                type="button"
-                class="min-h-11 rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#D4A574]"
-                @click="cancelar"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                class="min-h-11 rounded-lg bg-[#6B3A2A] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#8B5A3C] focus:outline-none focus:ring-2 focus:ring-[#D4A574] disabled:cursor-not-allowed disabled:opacity-60"
-                :disabled="!canAccept || disabled"
-                @click="intentarAceptar"
-              >
-                Aceptar
-              </button>
-            </div>
-          </template>
-
-          <!-- ══════════════════════════════════════════════════ -->
-          <!-- VISTA: CREAR PRODUCTO                              -->
-          <!-- ══════════════════════════════════════════════════ -->
-          <template v-else>
-            <!-- Encabezado -->
-            <div class="mb-5 flex items-center gap-3">
-              <!-- Botón volver -->
-              <button
-                type="button"
-                :disabled="savingProducto"
-                aria-label="Volver a la lista de productos"
-                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#6B3A2A] hover:bg-[#F5E6D3] focus:outline-none focus:ring-2 focus:ring-[#D4A574] disabled:cursor-not-allowed disabled:opacity-50"
-                @click="volverASeleccion"
-              >
-                <svg viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5" aria-hidden="true">
-                  <path fill-rule="evenodd" d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd" />
-                </svg>
-              </button>
-              <h2 id="modal-crear-titulo" class="flex-1 text-lg font-bold text-[#6B3A2A]">
-                Nuevo producto
-              </h2>
-              <!-- Botón cerrar -->
               <button
                 type="button"
                 aria-label="Cerrar modal"
-                :disabled="savingProducto"
-                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#D4A574] disabled:cursor-not-allowed disabled:opacity-50"
+                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D4A574]"
                 @click="cancelar"
               >
                 <svg viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5" aria-hidden="true">
@@ -354,11 +256,137 @@ function onKeydown(event: KeyboardEvent) {
               </button>
             </div>
 
-            <!-- Formulario -->
+            <div class="mb-3">
+              <AutocompleteProducto
+                v-model="productoSeleccionado"
+                :productos="productos"
+                :disabled="disabled"
+                @create="irACrear"
+              />
+            </div>
+
+            <!-- Producto elegido: nombre y precio a la vista -->
+            <div
+              v-if="productoSeleccionado"
+              aria-live="polite"
+              class="mb-4 flex items-center justify-between gap-3 rounded-xl bg-[#FBE6BE] px-3 py-2.5"
+            >
+              <span class="min-w-0 truncate text-sm font-semibold text-[#4A2418]">{{ productoSeleccionado.nombre }}</span>
+              <span v-if="precioSeleccionado" class="shrink-0 text-base font-bold text-[#4A2418]">{{ precioSeleccionado }}</span>
+            </div>
+
+            <button
+              type="button"
+              :disabled="disabled || savingProducto"
+              class="mb-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#A9784A] px-4 text-sm font-semibold text-[#6B3A2A] hover:bg-[#F5E6D3] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D4A574] disabled:cursor-not-allowed disabled:opacity-50"
+              @click="irACrear"
+            >
+              <svg viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4" aria-hidden="true">
+                <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
+              </svg>
+              ¿No está en la lista? Crear producto nuevo
+            </button>
+
+            <!-- Cantidad con − / + -->
+            <div class="mb-6">
+              <label for="modal-cantidad" class="mb-1.5 block text-sm font-semibold text-[#4A2418]">
+                Cantidad
+              </label>
+              <div class="flex items-stretch gap-2">
+                <button
+                  type="button"
+                  :disabled="disabled"
+                  aria-label="Disminuir cantidad"
+                  class="flex h-[3.25rem] w-[3.25rem] shrink-0 items-center justify-center rounded-xl border border-[#A9784A] text-2xl font-bold text-[#6B3A2A] hover:bg-[#F5E6D3] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D4A574] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                  @click="cambiarCantidad(-1)"
+                >−</button>
+                <input
+                  id="modal-cantidad"
+                  ref="cantidadInput"
+                  v-model="cantidadStr"
+                  type="number"
+                  min="1"
+                  step="1"
+                  inputmode="numeric"
+                  placeholder="Ej: 3"
+                  :disabled="disabled"
+                  class="min-h-[3.25rem] w-full min-w-0 rounded-xl border px-3 text-center text-xl font-semibold text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 disabled:bg-gray-100"
+                  :class="mostrarErrorCantidad
+                    ? 'border-red-400 focus:border-red-500 focus:ring-red-300'
+                    : 'border-[#A9784A] focus:border-[#6B3A2A] focus:ring-[#D4A574]'"
+                  @input="onCantidadInput"
+                >
+                <button
+                  type="button"
+                  :disabled="disabled"
+                  aria-label="Aumentar cantidad"
+                  class="flex h-[3.25rem] w-[3.25rem] shrink-0 items-center justify-center rounded-xl border border-[#A9784A] text-2xl font-bold text-[#6B3A2A] hover:bg-[#F5E6D3] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D4A574] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                  @click="cambiarCantidad(1)"
+                >+</button>
+              </div>
+              <p
+                v-if="mostrarErrorCantidad"
+                role="alert"
+                class="mt-1.5 text-sm text-red-700"
+              >
+                Ingresa la cantidad
+              </p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                class="min-h-[3.25rem] rounded-xl border border-gray-300 px-5 text-base font-semibold text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D4A574]"
+                @click="cancelar"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                class="min-h-[3.25rem] rounded-xl bg-gradient-to-br from-[#6B3A2A] to-[#4A2418] px-5 text-base font-semibold text-white shadow-[0_10px_20px_-8px_rgba(74,36,24,0.7)] hover:from-[#7A4634] hover:to-[#5A2F21] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4A2418] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
+                :disabled="!canAccept || disabled"
+                @click="intentarAceptar"
+              >
+                Agregar
+              </button>
+            </div>
+          </template>
+
+          <!-- ══════════════════════════════════════════════════ -->
+          <!-- VISTA: CREAR PRODUCTO                              -->
+          <!-- ══════════════════════════════════════════════════ -->
+          <template v-else>
+            <div class="mb-5 flex items-center gap-2">
+              <button
+                type="button"
+                :disabled="savingProducto"
+                aria-label="Volver a la lista de productos"
+                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[#6B3A2A] hover:bg-[#F5E6D3] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D4A574] disabled:cursor-not-allowed disabled:opacity-50"
+                @click="volverASeleccion"
+              >
+                <svg viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M11.78 5.22a.75.75 0 0 1 0 1.06L8.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06l-4.25-4.25a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd" />
+                </svg>
+              </button>
+              <h2 id="modal-crear-titulo" class="flex-1 text-xl font-bold text-[#3A1C12]">
+                Nuevo producto
+              </h2>
+              <button
+                type="button"
+                aria-label="Cerrar modal"
+                :disabled="savingProducto"
+                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D4A574] disabled:cursor-not-allowed disabled:opacity-50"
+                @click="cancelar"
+              >
+                <svg viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5" aria-hidden="true">
+                  <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+                </svg>
+              </button>
+            </div>
+
             <form class="space-y-4" novalidate @submit.prevent="submitCrear">
-              <!-- Nombre -->
               <div>
-                <label for="crear-nombre" class="mb-1.5 block text-sm font-semibold text-gray-700">
+                <label for="crear-nombre" class="mb-1.5 block text-sm font-semibold text-[#4A2418]">
                   Nombre
                 </label>
                 <input
@@ -370,14 +398,13 @@ function onKeydown(event: KeyboardEvent) {
                   maxlength="150"
                   :disabled="savingProducto"
                   placeholder="Nombre del producto"
-                  class="w-full rounded-lg border border-[#D4A574] px-3 py-2.5 text-gray-800 placeholder-gray-400 focus:border-[#6B3A2A] focus:outline-none focus:ring-2 focus:ring-[#D4A574] disabled:bg-gray-100"
+                  class="min-h-[3.25rem] w-full rounded-xl border border-[#A9784A] px-3 text-base text-gray-900 placeholder-gray-500 focus:border-[#6B3A2A] focus:outline-none focus:ring-2 focus:ring-[#D4A574] disabled:bg-gray-100"
                 >
               </div>
 
-              <!-- Descripción -->
               <div>
-                <label for="crear-descripcion" class="mb-1.5 block text-sm font-semibold text-gray-700">
-                  Descripción <span class="font-normal text-gray-500">(opcional)</span>
+                <label for="crear-descripcion" class="mb-1.5 block text-sm font-semibold text-[#4A2418]">
+                  Descripción <span class="font-normal text-[#5C4033]">(opcional)</span>
                 </label>
                 <textarea
                   id="crear-descripcion"
@@ -386,14 +413,13 @@ function onKeydown(event: KeyboardEvent) {
                   maxlength="500"
                   :disabled="savingProducto"
                   placeholder="Descripción corta del producto"
-                  class="w-full resize-none rounded-lg border border-[#D4A574] px-3 py-2.5 text-gray-800 placeholder-gray-400 focus:border-[#6B3A2A] focus:outline-none focus:ring-2 focus:ring-[#D4A574] disabled:bg-gray-100"
+                  class="w-full resize-none rounded-xl border border-[#A9784A] px-3 py-3 text-base text-gray-900 placeholder-gray-500 focus:border-[#6B3A2A] focus:outline-none focus:ring-2 focus:ring-[#D4A574] disabled:bg-gray-100"
                 />
               </div>
 
-              <!-- Precios -->
               <div class="grid grid-cols-2 gap-3">
                 <div>
-                  <label for="crear-costo" class="mb-1.5 block text-sm font-semibold text-gray-700">
+                  <label for="crear-costo" class="mb-1.5 block text-sm font-semibold text-[#4A2418]">
                     Costo unitario
                   </label>
                   <div class="relative">
@@ -408,12 +434,12 @@ function onKeydown(event: KeyboardEvent) {
                       inputmode="decimal"
                       :disabled="savingProducto"
                       placeholder="0.00"
-                      class="w-full rounded-lg border border-[#D4A574] py-2.5 pl-10 pr-3 text-gray-800 placeholder-gray-400 focus:border-[#6B3A2A] focus:outline-none focus:ring-2 focus:ring-[#D4A574] disabled:bg-gray-100"
+                      class="min-h-[3.25rem] w-full rounded-xl border border-[#A9784A] pl-10 pr-3 text-base text-gray-900 placeholder-gray-500 focus:border-[#6B3A2A] focus:outline-none focus:ring-2 focus:ring-[#D4A574] disabled:bg-gray-100"
                     >
                   </div>
                 </div>
                 <div>
-                  <label for="crear-venta" class="mb-1.5 block text-sm font-semibold text-gray-700">
+                  <label for="crear-venta" class="mb-1.5 block text-sm font-semibold text-[#4A2418]">
                     Precio venta
                   </label>
                   <div class="relative">
@@ -428,23 +454,21 @@ function onKeydown(event: KeyboardEvent) {
                       inputmode="decimal"
                       :disabled="savingProducto"
                       placeholder="0.00"
-                      class="w-full rounded-lg border border-[#D4A574] py-2.5 pl-10 pr-3 text-gray-800 placeholder-gray-400 focus:border-[#6B3A2A] focus:outline-none focus:ring-2 focus:ring-[#D4A574] disabled:bg-gray-100"
+                      class="min-h-[3.25rem] w-full rounded-xl border border-[#A9784A] pl-10 pr-3 text-base text-gray-900 placeholder-gray-500 focus:border-[#6B3A2A] focus:outline-none focus:ring-2 focus:ring-[#D4A574] disabled:bg-gray-100"
                     >
                   </div>
                 </div>
               </div>
 
-              <!-- Error -->
-              <div v-if="visibleError" role="alert" class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+              <div v-if="visibleError" role="alert" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 {{ visibleError }}
               </div>
 
-              <!-- Botones -->
-              <div class="flex justify-end gap-3 pt-1">
+              <div class="grid grid-cols-2 gap-3 pt-1">
                 <button
                   type="button"
                   :disabled="savingProducto"
-                  class="min-h-11 rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#D4A574] disabled:cursor-not-allowed disabled:opacity-60"
+                  class="min-h-[3.25rem] rounded-xl border border-gray-300 px-5 text-base font-semibold text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D4A574] disabled:cursor-not-allowed disabled:opacity-60"
                   @click="volverASeleccion"
                 >
                   Cancelar
@@ -452,13 +476,13 @@ function onKeydown(event: KeyboardEvent) {
                 <button
                   type="submit"
                   :disabled="savingProducto"
-                  class="inline-flex min-h-11 min-w-36 items-center justify-center gap-2 rounded-lg bg-[#6B3A2A] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#8B5A3C] focus:outline-none focus:ring-2 focus:ring-[#D4A574] disabled:cursor-not-allowed disabled:opacity-60"
+                  class="inline-flex min-h-[3.25rem] items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-[#6B3A2A] to-[#4A2418] px-4 text-base font-semibold text-white shadow-[0_10px_20px_-8px_rgba(74,36,24,0.7)] hover:from-[#7A4634] hover:to-[#5A2F21] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4A2418] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
                 >
                   <svg v-if="savingProducto" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.37 0 0 5.37 0 12h4Z" />
                   </svg>
-                  {{ savingProducto ? 'Guardando...' : 'Guardar producto' }}
+                  {{ savingProducto ? 'Guardando...' : 'Guardar' }}
                 </button>
               </div>
             </form>

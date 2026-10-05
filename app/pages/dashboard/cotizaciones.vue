@@ -8,6 +8,7 @@ import CotizacionExitoModal from '~/components/cotizaciones/CotizacionExitoModal
 import CotizacionResumen from '~/components/cotizaciones/CotizacionResumen.vue'
 import type { ClientePayload } from '~/composables/useClientes'
 import type { Producto, ProductoPayload } from '~/composables/useProductos'
+import { formatBs } from '~/utils/money'
 
 definePageMeta({ middleware: 'auth' })
 useHead({ title: 'Cotizaciones - Ferretería SRV' })
@@ -60,6 +61,17 @@ const printError = ref<string | null>(null)
 const reopenSuccessButton = ref<HTMLButtonElement | null>(null)
 const catalogLoading = computed(() => loadingClientes.value || loadingProductos.value)
 const catalogError = computed(() => clientesError.value || productosError.value)
+
+// Barra fija inferior (solo celular): resume el total y lleva al resumen.
+const mostrarBarra = computed(() => carrito.value.length > 0 && !cotizacionRegistrada.value)
+
+function irAlResumen() {
+  const reducirMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  document.getElementById('resumen-cotizacion')?.scrollIntoView({
+    behavior: reducirMovimiento ? 'auto' : 'smooth',
+    block: 'start'
+  })
+}
 
 async function loadCatalogs() {
   await Promise.all([fetchClientes(), fetchProductos()])
@@ -167,15 +179,26 @@ onMounted(loadCatalogs)
 </script>
 
 <template>
-  <section aria-labelledby="cotizaciones-title" class="no-print min-w-0">
-    <VolverDashboard />
-    <header class="mb-6">
-      <p class="mb-1 text-sm font-semibold uppercase tracking-wide text-[#8B5A3C]">Operaciones</p>
-      <h1 id="cotizaciones-title" class="text-2xl font-bold text-[#6B3A2A] sm:text-3xl">Registro de Cotizaciones</h1>
-      <p class="mt-2 text-sm text-gray-600">Selecciona un cliente y agrega productos para generar una cotización.</p>
-    </header>
+  <section
+    aria-labelledby="cotizaciones-title"
+    class="no-print min-w-0"
+    :class="mostrarBarra ? 'pb-28 lg:pb-0' : ''"
+  >
+    <VolverDashboard
+      titulo="Cotizaciones"
+      titulo-id="cotizaciones-title"
+      descripcion="Selecciona un cliente y agrega productos para generar una cotización."
+      tono="petroleo"
+    >
+      <template #icon>
+        <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z" />
+          <path d="M14 2v6h6M8 13h8M8 17h8M8 9h2" />
+        </svg>
+      </template>
+    </VolverDashboard>
 
-    <div v-if="catalogLoading" class="mb-5 flex items-center gap-3 rounded-xl border border-[#D4A574] bg-white p-4 text-sm text-gray-600" role="status">
+    <div v-if="catalogLoading" class="mb-5 flex items-center gap-3 rounded-2xl border border-[#E3CFB4] bg-white p-4 text-sm text-gray-700" role="status">
       <svg class="h-5 w-5 animate-spin text-[#6B3A2A]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.37 0 0 5.37 0 12h4Z" />
@@ -183,22 +206,22 @@ onMounted(loadCatalogs)
       Cargando clientes y productos...
     </div>
 
-    <div v-else-if="catalogError" class="mb-5 flex flex-col items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4" role="alert">
+    <div v-else-if="catalogError" class="mb-5 flex flex-col items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4" role="alert">
       <p class="text-sm text-red-700">{{ catalogError }}</p>
-      <button type="button" class="rounded-lg bg-[#6B3A2A] px-4 py-2 text-sm font-semibold text-white hover:bg-[#8B5A3C] focus:outline-none focus:ring-2 focus:ring-[#D4A574]" @click="loadCatalogs">Reintentar</button>
+      <button type="button" class="min-h-11 rounded-xl bg-[#6B3A2A] px-4 py-2 text-sm font-semibold text-white hover:bg-[#8B5A3C] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D4A574]" @click="loadCatalogs">Reintentar</button>
     </div>
 
     <div
       v-if="cotizacionRegistrada && !showSuccessModal"
-      class="mb-5 flex flex-col items-start justify-between gap-3 rounded-xl border border-green-200 bg-green-50 p-4 sm:flex-row sm:items-center"
+      class="mb-5 flex flex-col items-start justify-between gap-3 rounded-2xl border border-green-200 bg-green-50 p-4 sm:flex-row sm:items-center"
       role="status"
       aria-live="polite"
     >
-      <p class="text-sm font-semibold text-green-800">Cotización N.º {{ cotizacionRegistrada.id }} registrada. El comprobante permanece disponible.</p>
+      <p class="text-sm font-semibold text-green-900">Cotización N.º {{ cotizacionRegistrada.id }} registrada. El comprobante permanece disponible.</p>
       <button
         ref="reopenSuccessButton"
         type="button"
-        class="min-h-11 rounded-lg border border-green-300 bg-white px-4 py-2 text-sm font-semibold text-green-800 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-400"
+        class="min-h-11 rounded-xl border border-green-300 bg-white px-4 py-2 text-sm font-semibold text-green-900 hover:bg-green-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
         @click="reopenSuccessModal"
       >
         Ver comprobante
@@ -207,16 +230,22 @@ onMounted(loadCatalogs)
 
     <div class="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
       <div class="min-w-0 space-y-5">
-        <section aria-labelledby="cotizacion-cliente-title" class="rounded-xl border border-[#D4A574] bg-white p-4 shadow-sm sm:p-5">
-          <h2 id="cotizacion-cliente-title" class="mb-4 font-bold text-[#6B3A2A]">Cliente</h2>
+        <section aria-labelledby="cotizacion-cliente-title" class="rounded-3xl border border-[#E3CFB4] bg-white p-4 shadow-[0_1px_2px_rgba(74,36,24,0.08),0_12px_24px_-14px_rgba(74,36,24,0.35)] sm:p-5">
+          <h2 id="cotizacion-cliente-title" class="mb-3 flex items-center gap-2 text-lg font-bold text-[#3A1C12]">
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-[#E3F0F1] text-[#22555C]" aria-hidden="true">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+            </span>
+            Cliente
+          </h2>
           <AutocompleteCliente
             v-model="clienteSeleccionado"
             :clientes="clientes"
             :disabled="catalogLoading || registering || Boolean(cotizacionRegistrada)"
             @create="openClienteModal"
           />
-          <div v-if="clienteSeleccionado" aria-live="polite" class="mt-3 rounded-lg bg-[#F5E6D3] px-3 py-2 text-sm text-[#6B3A2A]">
-            Cliente seleccionado: <strong>{{ clienteSeleccionado.nombre }}</strong> · {{ clienteSeleccionado.celular }}
+          <div v-if="clienteSeleccionado" aria-live="polite" class="mt-3 flex items-center gap-2 rounded-xl bg-[#E3F0F1] px-3 py-2.5 text-sm text-[#1B4349]">
+            <svg class="h-5 w-5 shrink-0 text-green-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="m8 12 3 3 5-6" /></svg>
+            <span class="min-w-0">Cliente seleccionado: <strong>{{ clienteSeleccionado.nombre }}</strong> · {{ clienteSeleccionado.celular }}</span>
           </div>
         </section>
 
@@ -239,6 +268,25 @@ onMounted(loadCatalogs)
         @register="registrarCotizacionConExito"
         @clear="limpiarConConfirmacion"
       />
+    </div>
+
+    <!-- Barra inferior (solo celular): total a la vista y acceso directo al resumen -->
+    <div
+      v-if="mostrarBarra"
+      class="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-3 border-t border-[#E3CFB4] bg-white px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-10px_24px_-12px_rgba(74,36,24,0.35)] lg:hidden"
+    >
+      <div class="min-w-0">
+        <p class="text-xs font-medium text-[#5C4033]">{{ numeroArticulos }} {{ numeroArticulos === 1 ? 'artículo' : 'artículos' }}</p>
+        <p class="truncate text-xl font-bold leading-tight text-[#3A1C12]">{{ formatBs(totalCentavos) }}</p>
+      </div>
+      <button
+        type="button"
+        class="inline-flex min-h-12 shrink-0 items-center gap-2 rounded-xl bg-gradient-to-br from-[#2F7079] to-[#22555C] px-5 text-base font-semibold text-white shadow-[0_10px_20px_-8px_rgba(34,85,92,0.7)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#22555C] focus-visible:ring-offset-2 active:scale-95 motion-reduce:active:scale-100"
+        @click="irAlResumen"
+      >
+        Ver resumen
+        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+      </button>
     </div>
 
     <ClienteFormModal

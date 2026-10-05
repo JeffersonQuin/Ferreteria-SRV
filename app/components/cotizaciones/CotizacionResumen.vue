@@ -17,7 +17,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <section aria-labelledby="cotizacion-resumen-title" class="rounded-3xl border border-[#E3CFB4] bg-white p-5 shadow-[0_1px_2px_rgba(74,36,24,0.08),0_12px_24px_-14px_rgba(74,36,24,0.35)] lg:sticky lg:top-6">
+  <section id="resumen-cotizacion" aria-labelledby="cotizacion-resumen-title" class="scroll-mt-4 rounded-3xl border border-[#E3CFB4] bg-white p-5 shadow-[0_1px_2px_rgba(74,36,24,0.08),0_12px_24px_-14px_rgba(74,36,24,0.35)] lg:sticky lg:top-6">
     <h2 id="cotizacion-resumen-title" class="text-lg font-bold text-[#3A1C12]">Resumen de Cotización</h2>
 
     <div class="mt-4 rounded-2xl bg-[#E3F0F1] px-4 py-3">
