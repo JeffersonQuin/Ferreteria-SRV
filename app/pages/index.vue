@@ -48,7 +48,7 @@ async function handleSubmit() {
               Correo electrónico
             </label>
             <div class="relative">
-              <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+              <span class="pointer-events-none absolute inset-y-0 left-0 flex w-12 items-center justify-center">
                 <svg
                   class="h-5 w-5 text-[#A9784A]"
                   viewBox="0 0 24 24"
@@ -74,7 +74,7 @@ async function handleSubmit() {
                 autocapitalize="none"
                 spellcheck="false"
                 enterkeyhint="next"
-                class="min-h-13 w-full rounded-xl border border-[#A9784A] bg-white py-3.5 pl-11 pr-4 text-base text-gray-900 caret-[#6B3A2A] shadow-sm placeholder-gray-500 transition-colors duration-200 focus:border-[#6B3A2A] focus:outline-none focus:ring-2 focus:ring-[#D4A574] sm:text-sm"
+                class="h-14 w-full rounded-xl border border-[#A9784A] bg-white pl-12 pr-4 text-base text-gray-900 caret-[#6B3A2A] shadow-sm placeholder-gray-500 transition-colors duration-200 focus:border-[#6B3A2A] focus:outline-none focus:ring-2 focus:ring-[#D4A574] sm:text-sm"
               >
             </div>
           </div>
@@ -84,7 +84,7 @@ async function handleSubmit() {
               Contraseña
             </label>
             <div class="relative">
-              <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+              <span class="pointer-events-none absolute inset-y-0 left-0 flex w-12 items-center justify-center">
                 <svg
                   class="h-5 w-5 text-[#A9784A]"
                   viewBox="0 0 24 24"
@@ -109,11 +109,12 @@ async function handleSubmit() {
                 autocapitalize="none"
                 spellcheck="false"
                 enterkeyhint="go"
-                class="min-h-13 w-full rounded-xl border border-[#A9784A] bg-white py-3.5 pl-11 pr-14 text-base text-gray-900 caret-[#6B3A2A] shadow-sm placeholder-gray-500 transition-colors duration-200 focus:border-[#6B3A2A] focus:outline-none focus:ring-2 focus:ring-[#D4A574] sm:text-sm"
+                class="h-14 w-full rounded-xl border border-[#A9784A] bg-white pl-12 pr-14 text-base text-gray-900 caret-[#6B3A2A] shadow-sm placeholder-gray-500 transition-colors duration-200 focus:border-[#6B3A2A] focus:outline-none focus:ring-2 focus:ring-[#D4A574] sm:text-sm"
               >
+              <!-- El botón queda dentro del campo: 56px de ancho, centrado en vertical -->
               <button
                 type="button"
-                class="absolute inset-y-0 right-0 flex w-13 items-center justify-center rounded-r-xl text-[#6B3A2A] transition-colors duration-200 hover:text-[#3A1C12] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#6B3A2A]"
+                class="absolute inset-y-px right-px flex w-14 items-center justify-center rounded-r-[0.7rem] text-[#6B3A2A] transition-colors duration-200 hover:text-[#3A1C12] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#6B3A2A]"
                 :aria-label="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
                 :aria-pressed="showPassword"
                 @click="showPassword = !showPassword"
@@ -158,7 +159,7 @@ async function handleSubmit() {
             type="submit"
             :disabled="loading"
             :aria-busy="loading"
-            class="mt-1 flex min-h-13 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-[#6B3A2A] to-[#4A2418] text-base font-semibold text-white shadow-[0_10px_20px_-8px_rgba(74,36,24,0.7)] transition-all duration-200 enabled:hover:from-[#7A4634] enabled:hover:to-[#5A2F21] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4A2418] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FBF3E8] enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100 disabled:cursor-not-allowed disabled:opacity-60"
+            class="mt-2 flex h-16 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-[#6B3A2A] to-[#4A2418] text-lg font-semibold text-white shadow-[0_10px_20px_-8px_rgba(74,36,24,0.7)] transition-all duration-200 enabled:hover:from-[#7A4634] enabled:hover:to-[#5A2F21] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4A2418] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FBF3E8] enabled:active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <svg
               v-if="loading"
