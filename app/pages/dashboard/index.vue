@@ -4,15 +4,24 @@ useHead({ title: 'Ferretería SRV - Dashboard' })
 </script>
 
 <template>
-  <section aria-labelledby="dashboard-title" class="mx-auto flex max-w-5xl flex-col gap-6">
-    <header>
-      <h1 id="dashboard-title" class="text-2xl font-bold text-[#6B3A2A] sm:text-3xl">Ferretería SRV</h1>
-      <p class="mt-1 text-sm text-gray-600">Elige una aplicación para empezar</p>
+  <section aria-labelledby="dashboard-title" class="mx-auto flex max-w-5xl flex-col gap-5 sm:gap-6">
+    <header class="flex items-center gap-4 rounded-2xl bg-gradient-to-r from-[#4A2418] to-[#6B3A2A] p-4 text-white shadow-lg sm:p-5">
+      <img
+        src="/Logo.png"
+        alt="Ferretería SRV"
+        width="64"
+        height="64"
+        class="h-14 w-14 shrink-0 rounded-2xl object-contain shadow-md ring-2 ring-[#D4A574]/70 sm:h-16 sm:w-16"
+      >
+      <div class="min-w-0">
+        <h1 id="dashboard-title" class="text-xl font-bold sm:text-3xl">Ferretería SRV</h1>
+        <p class="mt-0.5 text-sm text-[#F5E6D3]">Elige una aplicación para empezar</p>
+      </div>
     </header>
 
     <UserInfo />
 
-    <nav aria-label="Aplicaciones" class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+    <nav aria-label="Aplicaciones" class="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
       <AppCard to="/dashboard/clientes" label="Clientes">
         <template #icon>
           <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
