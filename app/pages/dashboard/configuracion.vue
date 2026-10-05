@@ -155,42 +155,41 @@ onMounted(cargarUso)
 
 <template>
   <section aria-labelledby="configuracion-title" class="min-w-0">
-    <VolverDashboard />
-    <header class="mb-6">
-      <p class="mb-1 text-sm font-semibold uppercase tracking-wide text-[#8B5A3C]">Sistema</p>
-      <h1 id="configuracion-title" class="text-2xl font-bold text-[#6B3A2A] sm:text-3xl">Configuración</h1>
-      <p class="mt-2 text-sm text-gray-600">Administra el almacenamiento, libera espacio y exporta tus datos.</p>
-    </header>
+    <VolverDashboard
+      titulo="Configuración"
+      titulo-id="configuracion-title"
+      descripcion="Administra el almacenamiento, libera espacio y exporta tus datos."
+      tono="pizarra"
+    >
+      <template #icon>
+        <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+        </svg>
+      </template>
+    </VolverDashboard>
 
     <!-- ── 1. Almacenamiento ────────────────────────────────────────────────── -->
-    <section aria-labelledby="almacenamiento-title" class="mb-6 rounded-xl border border-[#D4A574] bg-white p-5 shadow-sm">
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h2 id="almacenamiento-title" class="text-lg font-bold text-[#6B3A2A]">Almacenamiento</h2>
-          <p class="mt-1 text-sm text-gray-600">Espacio que ocupa tu información en la base de datos.</p>
+    <section aria-labelledby="almacenamiento-title" class="mb-5 rounded-3xl border border-[#E3CFB4] bg-white p-5 shadow-[0_1px_2px_rgba(74,36,24,0.08),0_12px_24px_-14px_rgba(74,36,24,0.35)]">
+      <div class="flex items-start gap-3">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E6EAEE] text-[#3E4852]" aria-hidden="true">
+          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5" /><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3" /></svg>
+        </span>
+        <div class="min-w-0">
+          <h2 id="almacenamiento-title" class="text-lg font-bold text-[#3A1C12]">Almacenamiento</h2>
+          <p class="mt-0.5 text-sm text-[#5C4033]">Espacio que ocupa tu información en la base de datos.</p>
         </div>
-        <button
-          type="button"
-          :disabled="usoLoading"
-          class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[#D4A574] px-4 py-2 text-sm font-semibold text-[#6B3A2A] hover:bg-[#F5E6D3] focus:outline-none focus:ring-2 focus:ring-[#D4A574] disabled:opacity-60"
-          @click="cargarUso"
-        >
-          <svg class="h-4 w-4" :class="{ 'animate-spin': usoLoading }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>
-          </svg>
-          {{ usoLoading ? 'Midiendo...' : 'Actualizar' }}
-        </button>
       </div>
 
       <!-- Notificación al llegar al umbral de 450 MB -->
       <div
         v-if="enAlerta"
         role="alert"
-        class="mt-4 flex gap-3 rounded-xl border p-4 text-sm"
-        :class="nivel === 'critico' ? 'border-red-300 bg-red-50 text-red-800' : 'border-amber-300 bg-amber-50 text-amber-900'"
+        class="mt-4 flex gap-3 rounded-2xl border p-4 text-sm"
+        :class="nivel === 'critico' ? 'border-red-300 bg-red-50 text-red-900' : 'border-amber-300 bg-amber-50 text-amber-950'"
       >
         <svg class="mt-0.5 h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/>
+          <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" /><path d="M12 9v4M12 17h.01" />
         </svg>
         <p>
           <template v-if="nivel === 'critico'">
@@ -204,98 +203,122 @@ onMounted(cargarUso)
         </p>
       </div>
 
-      <div v-if="usoError" role="alert" class="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+      <div v-if="usoError" role="alert" class="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
         <p>{{ usoError }}</p>
         <button
           type="button"
-          class="mt-3 min-h-11 rounded-lg bg-[#6B3A2A] px-4 py-2 font-semibold text-white hover:bg-[#8B5A3C] focus:outline-none focus:ring-2 focus:ring-[#D4A574]"
+          class="mt-3 min-h-11 rounded-xl bg-[#6B3A2A] px-4 py-2 font-semibold text-white hover:bg-[#8B5A3C] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D4A574]"
           @click="cargarUso"
         >Reintentar</button>
       </div>
 
-      <div v-else-if="!uso" role="status" class="mt-4 flex items-center gap-3 text-sm text-gray-600">
+      <div v-else-if="!uso" role="status" class="mt-4 flex items-center gap-3 text-sm text-gray-700">
         <span class="h-5 w-5 animate-spin rounded-full border-2 border-[#D4A574] border-t-[#6B3A2A]" aria-hidden="true" />
         Midiendo el espacio utilizado...
       </div>
 
       <div v-else class="mt-5">
-        <div class="flex flex-wrap items-baseline justify-between gap-2">
-          <p class="text-2xl font-bold text-gray-900">
-            {{ usadoMb }} MB
-            <span class="text-base font-medium text-gray-600">de {{ limiteMb }} MB</span>
-          </p>
-          <p class="text-sm font-semibold text-gray-700">{{ porcentaje }}% usado</p>
-        </div>
+        <div class="rounded-2xl bg-[#F1F3F5] px-4 py-3">
+          <div class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+            <p class="text-3xl font-bold leading-tight text-[#2B343C]">
+              {{ usadoMb }} MB
+              <span class="text-base font-medium text-[#4A5560]">de {{ limiteMb }} MB</span>
+            </p>
+            <p class="text-sm font-bold text-[#2B343C]">{{ porcentaje }}% usado</p>
+          </div>
 
-        <div
-          class="mt-3 h-4 w-full overflow-hidden rounded-full bg-gray-200"
-          role="progressbar"
-          aria-label="Espacio de almacenamiento usado"
-          aria-valuemin="0"
-          :aria-valuemax="limiteMb"
-          :aria-valuenow="usadoMb"
-          :aria-valuetext="`${usadoMb} MB de ${limiteMb} MB usados`"
-        >
-          <div class="h-full rounded-full transition-all duration-500" :class="barraClase" :style="{ width: `${porcentaje}%` }" />
+          <div
+            class="mt-3 h-5 w-full overflow-hidden rounded-full bg-[#D5DADF]"
+            role="progressbar"
+            aria-label="Espacio de almacenamiento usado"
+            aria-valuemin="0"
+            :aria-valuemax="limiteMb"
+            :aria-valuenow="usadoMb"
+            :aria-valuetext="`${usadoMb} MB de ${limiteMb} MB usados`"
+          >
+            <div class="h-full rounded-full transition-all duration-500 motion-reduce:transition-none" :class="barraClase" :style="{ width: `${porcentaje}%` }" />
+          </div>
+          <p class="mt-2 text-sm text-[#4A5560]">
+            Disponible: {{ Math.max(Math.round((limiteMb - usadoMb) * 10) / 10, 0) }} MB · Última medición: {{ medidoEnTexto }}
+          </p>
         </div>
-        <p class="mt-2 text-xs text-gray-500">
-          Disponible: {{ Math.max(Math.round((limiteMb - usadoMb) * 10) / 10, 0) }} MB · Última medición: {{ medidoEnTexto }}
-        </p>
 
         <div v-if="tablasPrincipales.length" class="mt-5">
-          <h3 class="text-sm font-bold text-[#6B3A2A]">Tablas que más ocupan</h3>
-          <ul class="mt-2 divide-y divide-[#D4A574]/40 rounded-lg border border-[#D4A574]/60 text-sm">
-            <li v-for="tabla in tablasPrincipales" :key="tabla.tabla" class="flex items-center justify-between gap-4 px-3 py-2">
-              <span class="font-medium text-gray-800">{{ tabla.tabla }}</span>
-              <span class="text-gray-600">{{ formatMb(tabla.bytes) }}</span>
+          <h3 class="text-sm font-bold text-[#3A1C12]">Tablas que más ocupan</h3>
+          <ul class="mt-2 divide-y divide-[#F0E2CE] overflow-hidden rounded-2xl border border-[#E3CFB4] text-sm">
+            <li v-for="tabla in tablasPrincipales" :key="tabla.tabla" class="flex min-h-11 items-center justify-between gap-4 px-4 py-2.5">
+              <span class="min-w-0 break-words font-medium text-[#3A1C12]">{{ tabla.tabla }}</span>
+              <span class="shrink-0 font-semibold text-[#4A5560]">{{ formatMb(tabla.bytes) }}</span>
             </li>
           </ul>
         </div>
       </div>
+
+      <button
+        type="button"
+        :disabled="usoLoading"
+        class="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#56636F] px-4 text-sm font-semibold text-[#2B343C] hover:bg-[#E6EAEE] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#56636F] disabled:opacity-60 sm:w-auto"
+        @click="cargarUso"
+      >
+        <svg class="h-4 w-4" :class="{ 'animate-spin': usoLoading }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12a9 9 0 1 1-3-6.7L21 8" /><path d="M21 3v5h-5" />
+        </svg>
+        {{ usoLoading ? 'Midiendo...' : 'Actualizar medición' }}
+      </button>
     </section>
 
-    <!-- ── 2. Liberar espacio ───────────────────────────────────────────────── -->
-    <section aria-labelledby="liberar-title" class="mb-6 rounded-xl border border-[#D4A574] bg-white p-5 shadow-sm">
-      <h2 id="liberar-title" class="text-lg font-bold text-[#6B3A2A]">Liberar espacio</h2>
-      <p class="mt-1 text-sm text-gray-600">
-        Elimina todas las ventas de un rango de fechas. Se borran también sus productos vendidos.
-        <strong class="text-red-700">Esta acción es permanente y no se puede deshacer.</strong>
+    <!-- ── 2. Liberar espacio (zona de peligro) ─────────────────────────────── -->
+    <section aria-labelledby="liberar-title" class="mb-5 rounded-3xl border border-[#E3CFB4] bg-white p-5 shadow-[0_1px_2px_rgba(74,36,24,0.08),0_12px_24px_-14px_rgba(74,36,24,0.35)]">
+      <div class="flex items-start gap-3">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F8E3DD] text-[#9A4330]" aria-hidden="true">
+          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18m-2 0-.7 14H5.7L5 6m3 0V4h8v2m-6 4v6m4-6v6" /></svg>
+        </span>
+        <div class="min-w-0">
+          <h2 id="liberar-title" class="text-lg font-bold text-[#3A1C12]">Liberar espacio</h2>
+          <p class="mt-0.5 text-sm text-[#5C4033]">Elimina las ventas de un rango de fechas, junto con sus productos vendidos.</p>
+        </div>
+      </div>
+
+      <p class="mt-4 flex gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-900">
+        <svg class="mt-0.5 h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" /><path d="M12 9v4M12 17h.01" /></svg>
+        <span>Esta acción es permanente y no se puede deshacer.</span>
       </p>
 
-      <p v-if="limpiezaMensaje" role="status" aria-live="polite" class="mt-4 rounded-xl border border-green-200 bg-green-50 p-4 text-sm font-semibold text-green-800">
-        {{ limpiezaMensaje }}
+      <p v-if="limpiezaMensaje" role="status" aria-live="polite" class="mt-4 flex items-start gap-3 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm font-semibold text-green-900">
+        <svg class="mt-0.5 h-5 w-5 shrink-0 text-green-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="m8 12 3 3 5-6" /></svg>
+        <span>{{ limpiezaMensaje }}</span>
       </p>
 
-      <form class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-[12rem_12rem_auto]" @submit.prevent="aceptarRango">
+      <form class="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-[12rem_12rem_auto]" @submit.prevent="aceptarRango">
         <div>
-          <label for="limpieza-desde" class="mb-1 block text-xs font-semibold text-gray-600">Desde</label>
+          <label for="limpieza-desde" class="mb-1.5 block text-sm font-semibold text-[#4A2418]">Desde</label>
           <input
             id="limpieza-desde"
             v-model="fechaDesde"
             type="date"
             :disabled="limpiezaOcupada"
             :max="fechaHasta || undefined"
-            class="w-full rounded-lg border border-[#D4A574] px-3 py-2.5 text-gray-900 focus:border-[#6B3A2A] focus:outline-none focus:ring-2 focus:ring-[#D4A574] disabled:bg-gray-100"
+            class="min-h-12 w-full rounded-xl border border-[#A9784A] bg-white px-3 py-3 text-base text-gray-900 focus:border-[#6B3A2A] focus:outline-none focus:ring-2 focus:ring-[#D4A574] disabled:bg-gray-100 sm:text-sm"
             :class="{ 'border-red-400 focus:ring-red-300': errorFecha }"
           >
         </div>
         <div>
-          <label for="limpieza-hasta" class="mb-1 block text-xs font-semibold text-gray-600">Hasta</label>
+          <label for="limpieza-hasta" class="mb-1.5 block text-sm font-semibold text-[#4A2418]">Hasta</label>
           <input
             id="limpieza-hasta"
             v-model="fechaHasta"
             type="date"
             :disabled="limpiezaOcupada"
             :min="fechaDesde || undefined"
-            class="w-full rounded-lg border border-[#D4A574] px-3 py-2.5 text-gray-900 focus:border-[#6B3A2A] focus:outline-none focus:ring-2 focus:ring-[#D4A574] disabled:bg-gray-100"
+            class="min-h-12 w-full rounded-xl border border-[#A9784A] bg-white px-3 py-3 text-base text-gray-900 focus:border-[#6B3A2A] focus:outline-none focus:ring-2 focus:ring-[#D4A574] disabled:bg-gray-100 sm:text-sm"
             :class="{ 'border-red-400 focus:ring-red-300': errorFecha }"
           >
         </div>
-        <div class="flex items-end">
+        <div class="col-span-2 flex items-end lg:col-span-1">
           <button
             type="submit"
             :disabled="limpiezaOcupada"
-            class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#6B3A2A] px-5 py-2.5 font-semibold text-white hover:bg-[#8B5A3C] focus:outline-none focus:ring-2 focus:ring-[#D4A574] disabled:cursor-not-allowed disabled:opacity-60 lg:w-auto"
+            class="inline-flex min-h-[3.25rem] w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-[#B5533C] to-[#8A3524] px-5 text-base font-semibold text-white shadow-[0_10px_20px_-8px_rgba(138,53,36,0.7)] transition-all duration-200 enabled:hover:from-[#C2603F] enabled:hover:to-[#9A4330] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8A3524] focus-visible:ring-offset-2 enabled:active:scale-[0.98] motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none lg:w-auto"
           >
             <span v-if="contando" class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" aria-hidden="true" />
             {{ contando ? 'Buscando...' : 'Aceptar' }}
@@ -303,48 +326,54 @@ onMounted(cargarUso)
         </div>
       </form>
 
-      <p v-if="errorFecha" role="alert" class="mt-3 text-sm font-medium text-red-600">{{ errorFecha }}</p>
-      <p v-if="limpiezaError && !showRangoModal" role="alert" class="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+      <p v-if="errorFecha" role="alert" class="mt-3 text-sm font-medium text-red-700">{{ errorFecha }}</p>
+      <p v-if="limpiezaError && !showRangoModal" role="alert" class="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
         {{ limpiezaError }}
       </p>
     </section>
 
     <!-- ── 3. Exportaciones ─────────────────────────────────────────────────── -->
-    <section aria-labelledby="exportar-title" class="rounded-xl border border-[#D4A574] bg-white p-5 shadow-sm">
-      <h2 id="exportar-title" class="text-lg font-bold text-[#6B3A2A]">Exportar a Excel</h2>
-      <p class="mt-1 text-sm text-gray-600">
-        Descarga un respaldo de tus datos en un archivo que Excel abre directamente.
-      </p>
+    <section aria-labelledby="exportar-title" class="rounded-3xl border border-[#E3CFB4] bg-white p-5 shadow-[0_1px_2px_rgba(74,36,24,0.08),0_12px_24px_-14px_rgba(74,36,24,0.35)]">
+      <div class="flex items-start gap-3">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E4EBD0] text-[#505E26]" aria-hidden="true">
+          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4" /><path d="M5 21h14a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2" /></svg>
+        </span>
+        <div class="min-w-0">
+          <h2 id="exportar-title" class="text-lg font-bold text-[#3A1C12]">Exportar a Excel</h2>
+          <p class="mt-0.5 text-sm text-[#5C4033]">Descarga un respaldo de tus datos en un archivo que Excel abre directamente.</p>
+        </div>
+      </div>
 
-      <p v-if="exportMensaje" role="status" aria-live="polite" class="mt-4 rounded-xl border border-green-200 bg-green-50 p-4 text-sm font-semibold text-green-800">
-        {{ exportMensaje }}
+      <p v-if="exportMensaje" role="status" aria-live="polite" class="mt-4 flex items-start gap-3 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm font-semibold text-green-900">
+        <svg class="mt-0.5 h-5 w-5 shrink-0 text-green-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="m8 12 3 3 5-6" /></svg>
+        <span>{{ exportMensaje }}</span>
       </p>
-      <p v-if="exportError" role="alert" class="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+      <p v-if="exportError" role="alert" class="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
         {{ exportError }}
       </p>
 
-      <div class="mt-4 flex flex-col gap-3 sm:flex-row">
+      <div class="mt-4 grid gap-3 sm:grid-cols-2">
         <button
           type="button"
           :disabled="exportOcupado"
-          class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[#6B3A2A] px-5 py-2.5 text-sm font-semibold text-[#6B3A2A] hover:bg-[#F5E6D3] focus:outline-none focus:ring-2 focus:ring-[#D4A574] disabled:cursor-not-allowed disabled:opacity-60"
+          class="inline-flex min-h-[3.25rem] items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-[#C2603F] to-[#9A4330] px-5 text-base font-semibold text-white shadow-[0_10px_20px_-8px_rgba(154,67,48,0.7)] transition-all duration-200 enabled:hover:from-[#CF6B49] enabled:hover:to-[#A84A36] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#9A4330] focus-visible:ring-offset-2 enabled:active:scale-[0.98] motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
           @click="exportarClientes"
         >
           <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M5 21h14a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2"/>
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M19 8v6m3-3h-6" />
           </svg>
-          {{ exportandoClientes ? 'Exportando...' : 'Exportar clientes a Excel' }}
+          {{ exportandoClientes ? 'Exportando...' : 'Exportar clientes' }}
         </button>
         <button
           type="button"
           :disabled="exportOcupado"
-          class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[#6B3A2A] px-5 py-2.5 text-sm font-semibold text-[#6B3A2A] hover:bg-[#F5E6D3] focus:outline-none focus:ring-2 focus:ring-[#D4A574] disabled:cursor-not-allowed disabled:opacity-60"
+          class="inline-flex min-h-[3.25rem] items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-[#B07A1E] to-[#8A5E12] px-5 text-base font-semibold text-white shadow-[0_10px_20px_-8px_rgba(138,94,18,0.7)] transition-all duration-200 enabled:hover:from-[#BC8524] enabled:hover:to-[#966816] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8A5E12] focus-visible:ring-offset-2 enabled:active:scale-[0.98] motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
           @click="exportarProductos"
         >
-          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M5 21h14a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2"/>
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" /><path d="m3.3 7 8.7 5 8.7-5M12 22V12" />
           </svg>
-          {{ exportandoProductos ? 'Exportando...' : 'Exportar productos a Excel' }}
+          {{ exportandoProductos ? 'Exportando...' : 'Exportar productos' }}
         </button>
       </div>
     </section>
