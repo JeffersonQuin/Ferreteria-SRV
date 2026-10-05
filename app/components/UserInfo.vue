@@ -1,28 +1,36 @@
 <script setup lang="ts">
 const { user, signOut } = useAuth()
+
+const nombre = computed(() => {
+  const completo = user.value?.user_metadata?.full_name as string | undefined
+  if (completo?.trim()) return completo.trim()
+  return user.value?.email?.split('@')[0] ?? 'Usuario'
+})
 </script>
 
 <template>
-  <div class="flex flex-col gap-3 rounded-2xl border border-[#D4A574] bg-white p-4 shadow-sm sm:flex-row sm:items-center">
-    <div class="flex min-w-0 items-center gap-3">
-      <img
-        :src="user?.user_metadata?.avatar_url ?? '/placeholder-avatar.png'"
-        :alt="user?.user_metadata?.full_name ?? 'Usuario'"
-        width="48"
-        height="48"
-        class="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-[#D4A574]"
-      >
-      <div class="flex min-w-0 flex-col">
-        <span class="truncate font-semibold text-[#6B3A2A]">{{ user?.user_metadata?.full_name }}</span>
-        <span class="truncate text-sm text-gray-600">{{ user?.email }}</span>
-      </div>
+  <!-- Pensado para ir sobre la cabecera oscura del dashboard -->
+  <div class="flex items-center gap-3">
+    <img
+      :src="user?.user_metadata?.avatar_url ?? '/placeholder-avatar.png'"
+      :alt="nombre"
+      width="48"
+      height="48"
+      class="h-12 w-12 shrink-0 rounded-full bg-[#F5E6D3] object-cover ring-2 ring-[#D4A574]"
+    >
+    <div class="flex min-w-0 flex-1 flex-col">
+      <span class="truncate font-semibold text-white">{{ nombre }}</span>
+      <span class="truncate text-sm text-[#E8D4BC]">{{ user?.email }}</span>
     </div>
     <button
       type="button"
-      class="inline-flex min-h-11 items-center justify-center rounded-lg bg-[#6B3A2A] px-4 py-2 text-sm font-semibold text-white transition-colors duration-200 hover:bg-[#8B5A3C] focus:outline-none focus:ring-2 focus:ring-[#D4A574] focus:ring-offset-2 sm:ml-auto"
+      class="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-[#D4A574]/70 px-3.5 text-sm font-semibold text-[#F5E6D3] transition-colors duration-200 hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D4A574] motion-reduce:transition-none"
       @click="signOut"
     >
-      Cerrar sesión
+      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+      </svg>
+      <span>Salir</span>
     </button>
   </div>
 </template>

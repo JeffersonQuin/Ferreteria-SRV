@@ -9,7 +9,7 @@ export default defineNuxtConfig({
       ]
     }
   },
-  css: ['~/assets/css/print.css'],
+  css: ['~/assets/css/brand.css', '~/assets/css/print.css'],
   runtimeConfig: {
     // Disponibles solo en el servidor (p. ej. el endpoint /api/keep-alive).
     // Se completan en producción con las variables NUXT_SUPABASE_URL / NUXT_SUPABASE_KEY,

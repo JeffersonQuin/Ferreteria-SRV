@@ -1,0 +1,14 @@
+/* Motivo de marca: tablero perforado (pegboard) de ferretería.
+   Se usa en una capa decorativa absoluta que se desvanece hacia abajo. */
+.pegboard {
+  background-image: radial-gradient(circle at center, rgba(212, 165, 116, 0.28) 0 1.5px, transparent 2.2px);
+  background-size: 24px 24px;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 85%);
+  mask-image: linear-gradient(to bottom, #000 0%, transparent 85%);
+}
+
+/* Selección y cursor con la paleta de marca. */
+::selection {
+  background: rgba(212, 165, 116, 0.55);
+  color: #3a1c12;
+}

@@ -5,24 +5,42 @@ useHead({ title: 'Ferretería SRV - Dashboard' })
 
 <template>
   <section aria-labelledby="dashboard-title" class="mx-auto flex max-w-5xl flex-col gap-5 sm:gap-6">
-    <header class="flex items-center gap-4 rounded-2xl bg-gradient-to-r from-[#4A2418] to-[#6B3A2A] p-4 text-white shadow-lg sm:p-5">
-      <img
-        src="/Logo.png"
-        alt="Ferretería SRV"
-        width="64"
-        height="64"
-        class="h-14 w-14 shrink-0 rounded-2xl object-contain shadow-md ring-2 ring-[#D4A574]/70 sm:h-16 sm:w-16"
-      >
-      <div class="min-w-0">
-        <h1 id="dashboard-title" class="text-xl font-bold sm:text-3xl">Ferretería SRV</h1>
-        <p class="mt-0.5 text-sm text-[#F5E6D3]">Elige una aplicación para empezar</p>
+    <header class="relative isolate overflow-hidden rounded-3xl bg-gradient-to-br from-[#3A1C12] via-[#4A2418] to-[#6B3A2A] p-5 text-white shadow-[0_18px_32px_-16px_rgba(58,28,18,0.8)] sm:p-7">
+      <div class="pegboard pointer-events-none absolute inset-0 -z-10" aria-hidden="true" />
+
+      <div class="flex items-center gap-4">
+        <img
+          src="/Logo.png"
+          alt="Ferretería SRV"
+          width="72"
+          height="72"
+          class="h-14 w-14 shrink-0 rounded-2xl object-contain shadow-[0_10px_18px_-8px_rgba(0,0,0,0.6)] ring-2 ring-[#D4A574]/70 sm:h-[4.5rem] sm:w-[4.5rem]"
+        >
+        <div class="min-w-0">
+          <h1 id="dashboard-title" class="text-balance text-2xl font-bold tracking-tight sm:text-3xl">Ferretería SRV</h1>
+          <p class="mt-0.5 text-sm text-[#E8D4BC]">Elige una aplicación para empezar</p>
+        </div>
+      </div>
+
+      <div class="mt-5 border-t border-white/15 pt-4">
+        <UserInfo />
       </div>
     </header>
 
-    <UserInfo />
+    <nav aria-label="Aplicaciones" class="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+      <div class="col-span-2 sm:col-span-3">
+        <AppCard to="/dashboard/ventas" label="Ventas" hint="Registrar una venta" tono="arena" destacada>
+          <template #icon>
+            <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="9" cy="21" r="1" />
+              <circle cx="20" cy="21" r="1" />
+              <path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6" />
+            </svg>
+          </template>
+        </AppCard>
+      </div>
 
-    <nav aria-label="Aplicaciones" class="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
-      <AppCard to="/dashboard/clientes" label="Clientes">
+      <AppCard to="/dashboard/clientes" label="Clientes" tono="terracota">
         <template #icon>
           <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
@@ -32,7 +50,7 @@ useHead({ title: 'Ferretería SRV - Dashboard' })
         </template>
       </AppCard>
 
-      <AppCard to="/dashboard/productos" label="Productos">
+      <AppCard to="/dashboard/productos" label="Productos" tono="ocre">
         <template #icon>
           <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true">
             <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
@@ -41,26 +59,7 @@ useHead({ title: 'Ferretería SRV - Dashboard' })
         </template>
       </AppCard>
 
-      <AppCard to="/dashboard/ventas" label="Ventas">
-        <template #icon>
-          <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="9" cy="21" r="1" />
-            <circle cx="20" cy="21" r="1" />
-            <path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6" />
-          </svg>
-        </template>
-      </AppCard>
-
-      <AppCard to="/dashboard/historial" label="Historial">
-        <template #icon>
-          <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
-            <path d="M3 3v5h5M12 7v5l3 2" />
-          </svg>
-        </template>
-      </AppCard>
-
-      <AppCard to="/dashboard/cotizaciones" label="Cotizaciones">
+      <AppCard to="/dashboard/cotizaciones" label="Cotizaciones" tono="petroleo">
         <template #icon>
           <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z" />
@@ -69,7 +68,16 @@ useHead({ title: 'Ferretería SRV - Dashboard' })
         </template>
       </AppCard>
 
-      <AppCard to="/dashboard/historial-cotizaciones" label="Historial Cotizaciones">
+      <AppCard to="/dashboard/historial" label="Historial" tono="oliva">
+        <template #icon>
+          <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+            <path d="M3 3v5h5M12 7v5l3 2" />
+          </svg>
+        </template>
+      </AppCard>
+
+      <AppCard to="/dashboard/historial-cotizaciones" label="Historial Cotizaciones" tono="ciruela">
         <template #icon>
           <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h5" />
@@ -80,7 +88,7 @@ useHead({ title: 'Ferretería SRV - Dashboard' })
         </template>
       </AppCard>
 
-      <AppCard to="/dashboard/configuracion" label="Configuración">
+      <AppCard to="/dashboard/configuracion" label="Configuración" tono="pizarra">
         <template #icon>
           <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="12" cy="12" r="3" />
