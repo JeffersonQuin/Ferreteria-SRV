@@ -64,126 +64,74 @@ function updatePrecio(item: CotizacionCarritoItem, event: Event) {
     </div>
 
     <template v-else>
-      <!-- Celular y tablet: una tarjeta por producto -->
-      <ul class="divide-y divide-[#F0E2CE] md:hidden">
-        <li v-for="item in items" :key="item.productoId" class="p-4">
-          <div class="flex items-start justify-between gap-3">
-            <h3 class="min-w-0 break-words font-semibold leading-tight text-[#3A1C12]">{{ item.nombre }}</h3>
-            <button
-              type="button"
-              class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-red-200 text-red-700 hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300 active:scale-95"
-              :aria-label="`Eliminar ${item.nombre} del carrito`"
-              @click="emit('remove', item.productoId)"
-            >
-              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M3 6h18m-2 0-.7 14H5.7L5 6m3 0V4h8v2m-6 4v6m4-6v6" />
-              </svg>
-            </button>
-          </div>
+      <!-- Tabla en filas para todos los dispositivos: CANT. | PRODUCTO | P. VENTA | SUBT. | ACCIÓN -->
+      <div class="max-w-full overflow-x-auto">
+        <table class="w-full min-w-[420px] divide-y divide-gray-200 text-xs sm:text-sm md:min-w-[720px]">
+          <thead class="bg-[#6B3A2A] text-left text-white">
+            <tr>
+              <th scope="col" class="px-1.5 py-3 text-center font-semibold sm:px-3 md:px-4">CANT.</th>
+              <th scope="col" class="px-1.5 py-3 font-semibold sm:px-3 md:px-4">PRODUCTO</th>
+              <th scope="col" class="px-1.5 py-3 text-center font-semibold sm:px-3 md:px-4">P. VENTA</th>
+              <th scope="col" class="px-1.5 py-3 text-right font-semibold sm:px-3 md:px-4">SUBT.</th>
+              <th scope="col" class="px-1.5 py-3 text-center font-semibold sm:px-3 md:px-4">ACCIÓN</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200">
+            <tr v-for="item in items" :key="item.productoId">
+              <td class="px-1.5 py-3 text-center sm:px-3 md:px-4">
+                <label :for="`cotizacion-cantidad-${item.productoId}`" class="sr-only">
+                  Cantidad de {{ item.nombre }}
+                </label>
+                <input
+                  :id="`cotizacion-cantidad-${item.productoId}`"
+                  :value="item.cantidad"
+                  type="number"
+                  min="1"
+                  step="1"
+                  inputmode="numeric"
+                  class="w-12 rounded-lg border border-[#D4A574] px-1 py-2 text-center focus:outline-none focus:ring-2 focus:ring-[#D4A574] sm:w-16 md:w-20 md:px-2"
+                  @change="updateCantidad(item, $event)"
+                >
+              </td>
 
-          <div class="mt-3 grid grid-cols-2 gap-3">
-            <div>
-              <label :for="`cotizacion-cantidad-m-${item.productoId}`" class="mb-1 block text-sm font-medium text-[#4A2418]">Cantidad</label>
-              <input
-                :id="`cotizacion-cantidad-m-${item.productoId}`"
-                :value="item.cantidad"
-                type="number"
-                min="1"
-                step="1"
-                inputmode="numeric"
-                class="min-h-12 w-full rounded-xl border border-[#A9784A] bg-white px-2 text-center text-base text-gray-900 focus:border-[#22555C] focus:outline-none focus:ring-2 focus:ring-[#2F7079]/40"
-                @change="updateCantidad(item, $event)"
-              >
-            </div>
-            <div>
-              <label :for="`cotizacion-precio-m-${item.productoId}`" class="mb-1 block text-sm font-medium text-[#4A2418]">Precio venta (Bs)</label>
-              <input
-                :id="`cotizacion-precio-m-${item.productoId}`"
-                :value="(item.precioVentaCentavos / 100).toFixed(2)"
-                type="number"
-                min="0.01"
-                step="0.01"
-                inputmode="decimal"
-                class="min-h-12 w-full rounded-xl border border-[#A9784A] bg-white px-2 text-center text-base text-gray-900 focus:border-[#22555C] focus:outline-none focus:ring-2 focus:ring-[#2F7079]/40"
-                @change="updatePrecio(item, $event)"
-              >
-            </div>
-          </div>
+              <td class="min-w-24 max-w-56 break-words px-1.5 py-3 font-medium text-gray-800 sm:px-3 md:px-4">
+                {{ item.nombre }}
+              </td>
 
-          <p class="mt-3 flex items-center justify-between rounded-xl bg-[#E3F0F1] px-3 py-2 text-sm">
-            <span class="font-medium text-[#1B4349]">Subtotal</span>
-            <strong class="text-base text-[#1B4349]">{{ formatBs(item.precioVentaCentavos * item.cantidad) }}</strong>
-          </p>
-        </li>
-      </ul>
+              <td class="px-1.5 py-3 text-center sm:px-3 md:px-4">
+                <label :for="`cotizacion-precio-${item.productoId}`" class="sr-only">
+                  Precio de venta de {{ item.nombre }}
+                </label>
+                <input
+                  :id="`cotizacion-precio-${item.productoId}`"
+                  :value="(item.precioVentaCentavos / 100).toFixed(2)"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  inputmode="decimal"
+                  class="w-16 rounded-lg border border-[#D4A574] px-1 py-2 text-center focus:outline-none focus:ring-2 focus:ring-[#D4A574] sm:w-20 md:w-24 md:px-2"
+                  @change="updatePrecio(item, $event)"
+                >
+              </td>
 
-    <div class="hidden max-w-full overflow-x-auto md:block">
-      <table class="w-full min-w-[720px] divide-y divide-gray-200 text-sm">
-        <thead class="bg-[#6B3A2A] text-left text-white">
-          <tr>
-            <th scope="col" class="px-4 py-3 font-semibold">PRODUCTO</th>
-            <th scope="col" class="px-4 py-3 text-center font-semibold">CANT.</th>
-            <th scope="col" class="px-4 py-3 text-center font-semibold">P. VENTA</th>
-            <th scope="col" class="px-4 py-3 text-right font-semibold">SUBT.</th>
-            <th scope="col" class="px-4 py-3 text-center font-semibold">ACCIÓN</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-200">
-          <tr v-for="item in items" :key="item.productoId">
-            <td class="max-w-56 break-words px-4 py-3 font-medium text-gray-800">
-              {{ item.nombre }}
-            </td>
+              <td class="whitespace-nowrap px-1.5 py-3 text-right font-semibold text-[#6B3A2A] sm:px-3 md:px-4">
+                {{ formatBs(item.precioVentaCentavos * item.cantidad) }}
+              </td>
 
-            <td class="px-4 py-3 text-center">
-              <label :for="`cotizacion-cantidad-${item.productoId}`" class="sr-only">
-                Cantidad de {{ item.nombre }}
-              </label>
-              <input
-                :id="`cotizacion-cantidad-${item.productoId}`"
-                :value="item.cantidad"
-                type="number"
-                min="1"
-                step="1"
-                inputmode="numeric"
-                class="w-20 rounded-lg border border-[#D4A574] px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-[#D4A574]"
-                @change="updateCantidad(item, $event)"
-              >
-            </td>
-
-            <td class="px-4 py-3 text-center">
-              <label :for="`cotizacion-precio-${item.productoId}`" class="sr-only">
-                Precio de venta de {{ item.nombre }}
-              </label>
-              <input
-                :id="`cotizacion-precio-${item.productoId}`"
-                :value="(item.precioVentaCentavos / 100).toFixed(2)"
-                type="number"
-                min="0.01"
-                step="0.01"
-                inputmode="decimal"
-                class="w-24 rounded-lg border border-[#D4A574] px-2 py-2 text-center focus:outline-none focus:ring-2 focus:ring-[#D4A574]"
-                @change="updatePrecio(item, $event)"
-              >
-            </td>
-
-            <td class="whitespace-nowrap px-4 py-3 text-right font-semibold text-[#6B3A2A]">
-              {{ formatBs(item.precioVentaCentavos * item.cantidad) }}
-            </td>
-
-            <td class="px-4 py-3 text-center">
-              <button
-                type="button"
-                class="min-h-10 rounded-lg border border-red-200 px-3 py-2 font-semibold text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-300"
-                :aria-label="`Eliminar ${item.nombre} del carrito`"
-                @click="emit('remove', item.productoId)"
-              >
-                Eliminar
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+              <td class="px-1.5 py-3 text-center sm:px-3 md:px-4">
+                <button
+                  type="button"
+                  class="min-h-10 rounded-lg border border-red-200 px-2 py-2 font-semibold text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-300 md:px-3"
+                  :aria-label="`Eliminar ${item.nombre} del carrito`"
+                  @click="emit('remove', item.productoId)"
+                >
+                  Eliminar
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </template>
   </section>
 </template>
