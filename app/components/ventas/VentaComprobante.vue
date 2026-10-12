@@ -24,14 +24,16 @@ function formatDate(value: string) {
       </div>
       <!-- Centro: título -->
       <h1 class="receipt-title">RECIBO</h1>
-      <!-- Derecha: número de recibo -->
-      <p class="receipt-doc-number">N°{{ snapshot.id }}</p>
+      <!-- Derecha: número de recibo y fecha debajo -->
+      <div class="receipt-header-meta">
+        <p class="receipt-doc-number">N°{{ snapshot.id }}</p>
+        <p class="receipt-doc-date">Fecha: <time :datetime="snapshot.fecha">{{ formatDate(snapshot.fecha) }}</time></p>
+      </div>
     </header>
 
     <dl class="receipt-details">
       <div><dt>Señor(es):</dt><dd>{{ snapshot.clienteNombre }}</dd></div>
       <div><dt>Celular:</dt><dd>{{ snapshot.clienteCelular || 'No registrado' }}</dd></div>
-      <div><dt>Fecha:</dt><dd><time :datetime="snapshot.fecha">{{ formatDate(snapshot.fecha) }}</time></dd></div>
     </dl>
 
     <table class="receipt-table">

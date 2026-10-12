@@ -22,13 +22,15 @@ function formatDate(value: string) {
         <p class="receipt-brand-address">Oruro-Bolivia</p>
       </div>
       <h1 class="receipt-title">COTIZACIÓN</h1>
-      <p class="receipt-doc-number">N°{{ snapshot.id }}</p>
+      <div class="receipt-header-meta">
+        <p class="receipt-doc-number">N°{{ snapshot.id }}</p>
+        <p class="receipt-doc-date">Fecha: <time :datetime="snapshot.fecha">{{ formatDate(snapshot.fecha) }}</time></p>
+      </div>
     </header>
 
     <dl class="receipt-details">
       <div><dt>Señor(es):</dt><dd>{{ snapshot.clienteNombre }}</dd></div>
       <div><dt>Celular:</dt><dd>{{ snapshot.clienteCelular || 'No registrado' }}</dd></div>
-      <div><dt>Fecha:</dt><dd><time :datetime="snapshot.fecha">{{ formatDate(snapshot.fecha) }}</time></dd></div>
     </dl>
 
     <table class="receipt-table">
