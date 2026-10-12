@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import HistorialDetalleModal from '~/components/ventas/HistorialDetalleModal.vue'
+import HistorialInformeVentasModal from '~/components/ventas/HistorialInformeVentasModal.vue'
 import HistorialPagoModal from '~/components/ventas/HistorialPagoModal.vue'
 import HistorialResumenDiaModal from '~/components/ventas/HistorialResumenDiaModal.vue'
 import HistorialResumenPorDiaReporte from '~/components/ventas/HistorialResumenPorDiaReporte.vue'
 import HistorialVentaComprobante from '~/components/ventas/HistorialVentaComprobante.vue'
 import HistorialVentasReporte from '~/components/ventas/HistorialVentasReporte.vue'
 import type { HistorialVenta, HistorialVentaDetalle } from '~/composables/useHistorialVentas'
+import type { RangoFechas } from '~/composables/useResumenPorDia'
 import { formatBs } from '~/utils/money'
 
 definePageMeta({ middleware: 'auth' })
@@ -67,6 +69,8 @@ const {
 const showDetailModal = ref(false)
 const showPaymentModal = ref(false)
 const showResumenDiaModal = ref(false)
+const showInformeVentasModal = ref(false)
+const informeError = ref<string | null>(null)
 const selectedDetailVenta = shallowRef<HistorialVenta | null>(null)
 const selectedPaymentVenta = shallowRef<HistorialVenta | null>(null)
 const printReceipt = shallowRef<HistorialVentaDetalle | null>(null)
@@ -223,20 +227,41 @@ async function exportPdf() {
 }
 
 // ── Informe de ventas por día (Spec 017) ────────────────────────────────────
-async function exportResumenPorDia() {
+function openInformeVentas() {
   if (actionsDisabled.value) return
+  informeError.value = null
+  showInformeVentasModal.value = true
+}
+
+function closeInformeVentas() {
+  if (loadingResumenPorDia.value || printing.value) return
+  showInformeVentasModal.value = false
+  informeError.value = null
+}
+
+async function onGenerarInforme(rango: RangoFechas) {
+  if (loadingResumenPorDia.value || printing.value) return
   printing.value = true
   printError.value = null
+  informeError.value = null
   clearResumenPorDia()
 
   try {
-    const loaded = await loadResumenPorDia()
-    if (!loaded) throw new Error(errorResumenPorDia.value || 'No fue posible preparar el resumen por día.')
+    const loaded = await loadResumenPorDia(rango)
+    if (!loaded) {
+      // El modal permanece abierto mostrando el motivo (sin ventas, rango inválido, error de red)
+      informeError.value = errorResumenPorDia.value || 'No fue posible preparar el informe de ventas.'
+      return
+    }
+
+    // Cerrar el modal antes de imprimir para que no aparezca sobre el diálogo
+    showInformeVentasModal.value = false
     printMode.value = 'resumen-por-dia'
     await invokePrint()
   } catch (cause) {
-    console.error('[HistorialVentas] No fue posible imprimir el resumen por día', cause)
-    printError.value = cause instanceof Error ? cause.message : 'No fue posible abrir la impresión del resumen por día.'
+    console.error('[HistorialVentas] No fue posible imprimir el informe de ventas', cause)
+    showInformeVentasModal.value = false
+    printError.value = cause instanceof Error ? cause.message : 'No fue posible abrir la impresión del informe de ventas.'
   } finally {
     printMode.value = null
     printing.value = false
@@ -281,7 +306,7 @@ onMounted(fetchVentas)
         type="button"
         class="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[#505E26] bg-white px-3 text-sm font-semibold text-[#3F4A1E] hover:bg-[#EEF1E0] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6B7A3A] disabled:cursor-not-allowed disabled:opacity-60"
         :disabled="actionsDisabled || loadingResumenPorDia"
-        @click="exportResumenPorDia"
+        @click="openInformeVentas"
       >
         <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /><path d="M8 14h.01M12 14h.01M16 14h.01" />
@@ -640,6 +665,13 @@ onMounted(fetchVentas)
       :resumen="resumenDia"
       @close="showResumenDiaModal = false"
       @consultar="loadResumenDia"
+    />
+    <HistorialInformeVentasModal
+      :open="showInformeVentasModal"
+      :loading="loadingResumenPorDia"
+      :error="informeError"
+      @close="closeInformeVentas"
+      @aceptar="onGenerarInforme"
     />
   </section>
 

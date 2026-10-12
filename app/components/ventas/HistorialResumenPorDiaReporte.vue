@@ -33,6 +33,7 @@ function formatDateTime(value: string) {
       <header class="report-header">
         <h1>Ferretería SRV</h1>
         <h2>Informe de ventas por día</h2>
+        <p>Rango: {{ formatFecha(resumen.rangoDesde) }} al {{ formatFecha(resumen.rangoHasta) }}</p>
         <p>Generado: {{ formatDateTime(resumen.generadoEn) }}</p>
       </header>
 

@@ -13,11 +13,19 @@ export type ResumenPorDiaItem = {
   gananciaDiaCentavos: number
 }
 
+// Rango de fechas elegido por el usuario (Spec 026)
+export type RangoFechas = {
+  desde: string // YYYY-MM-DD
+  hasta: string // YYYY-MM-DD
+}
+
 export type ResumenPorDia = {
   items: ResumenPorDiaItem[]
   generadoEn: string
   totalVentasCentavos: number
   totalGananciasCentavos: number
+  rangoDesde: string // YYYY-MM-DD
+  rangoHasta: string // YYYY-MM-DD
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -90,11 +98,22 @@ function errorMessage(cause: unknown, fallback: string) {
   return cause instanceof Error && cause.message ? cause.message : fallback
 }
 
+const FECHA_ISO_REGEX = /^\d{4}-\d{2}-\d{2}$/
+
+function isFechaIsoValida(value: string) {
+  return FECHA_ISO_REGEX.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00`))
+}
+
+function formatFechaCorta(fecha: string) {
+  const [year, month, day] = fecha.split('-')
+  return `${day}/${month}/${year}`
+}
+
 // ── Composable ───────────────────────────────────────────────────────────────
 
 export function useResumenPorDia() {
   const supabase = useSupabaseClient<Database>()
-  
+
   const resumenPorDia = shallowRef<ResumenPorDia | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -102,15 +121,32 @@ export function useResumenPorDia() {
   const BATCH_SIZE = 500
   const VENTA_COLUMNS = 'id,fecha,total,ganancia_total,estado'
 
-  async function loadResumenPorDia(): Promise<boolean> {
+  async function loadResumenPorDia(rango: RangoFechas): Promise<boolean> {
     if (loading.value) return false
-    
-    loading.value = true
+
     error.value = null
     resumenPorDia.value = null
 
+    // Validar el rango antes de consultar
+    const desde = rango?.desde?.trim() ?? ''
+    const hasta = rango?.hasta?.trim() ?? ''
+    if (!desde || !hasta) {
+      error.value = 'Selecciona la fecha de inicio y la fecha de fin.'
+      return false
+    }
+    if (!isFechaIsoValida(desde) || !isFechaIsoValida(hasta)) {
+      error.value = 'Las fechas seleccionadas no son válidas.'
+      return false
+    }
+    if (desde > hasta) {
+      error.value = 'La fecha "Desde" no puede ser posterior a la fecha "Hasta".'
+      return false
+    }
+
+    loading.value = true
+
     try {
-      // Cargar todas las ventas en lotes
+      // Cargar solo las ventas dentro del rango (ambos extremos inclusive), en lotes
       const collected: VentaParaResumen[] = []
       let offset = 0
 
@@ -118,6 +154,8 @@ export function useResumenPorDia() {
         const { data, error: queryError } = await supabase
           .from('ventas')
           .select(VENTA_COLUMNS)
+          .gte('fecha', `${desde}T00:00:00`)
+          .lte('fecha', `${hasta}T23:59:59.999`)
           .order('fecha', { ascending: true })
           .order('id', { ascending: true })
           .range(offset, offset + BATCH_SIZE - 1)
@@ -130,13 +168,13 @@ export function useResumenPorDia() {
         }
 
         collected.push(...parsed as VentaParaResumen[])
-        
+
         if ((data?.length ?? 0) < BATCH_SIZE) break
         offset += BATCH_SIZE
       }
 
       if (collected.length === 0) {
-        throw new Error('No existen ventas para generar el resumen por día.')
+        throw new Error(`No hay ventas en el rango seleccionado (${formatFechaCorta(desde)} al ${formatFechaCorta(hasta)}).`)
       }
 
       // Agrupar por día (fecha sin hora)
@@ -152,7 +190,7 @@ export function useResumenPorDia() {
       for (const venta of collected) {
         // Extraer solo la fecha (YYYY-MM-DD) sin la hora
         const fechaDia = venta.fecha.split('T')[0] ?? venta.fecha
-        
+
         const actual = porDia.get(fechaDia) ?? {
           ventas: 0,
           noPagadas: 0,
@@ -199,7 +237,9 @@ export function useResumenPorDia() {
         items,
         generadoEn: new Date().toISOString(),
         totalVentasCentavos,
-        totalGananciasCentavos
+        totalGananciasCentavos,
+        rangoDesde: desde,
+        rangoHasta: hasta
       }
 
       return true
