@@ -6,7 +6,7 @@ import HistorialResumenDiaModal from '~/components/ventas/HistorialResumenDiaMod
 import HistorialResumenPorDiaReporte from '~/components/ventas/HistorialResumenPorDiaReporte.vue'
 import HistorialVentaComprobante from '~/components/ventas/HistorialVentaComprobante.vue'
 import HistorialVentasReporte from '~/components/ventas/HistorialVentasReporte.vue'
-import type { HistorialVenta, HistorialVentaDetalle } from '~/composables/useHistorialVentas'
+import type { HistorialVenta, HistorialVentaDetalle, ItemModificado } from '~/composables/useHistorialVentas'
 import type { RangoFechas } from '~/composables/useResumenPorDia'
 import { formatBs } from '~/utils/money'
 
@@ -120,10 +120,17 @@ function closeDetail() {
 }
 
 // ── Edición de venta (Corrección 1 - Spec 012) ───────────────────────────────
-async function onGuardarEdicion(itemsAEliminar: number[]) {
+async function onGuardarEdicion(
+  itemsAEliminar: number[],
+  itemsModificados: ItemModificado[]
+) {
   if (!selectedDetailVenta.value || !detalle.value) return
 
-  const ventaActualizada = await editarVenta(selectedDetailVenta.value.id, itemsAEliminar)
+  const ventaActualizada = await editarVenta(
+    selectedDetailVenta.value.id,
+    itemsAEliminar,
+    itemsModificados
+  )
   if (!ventaActualizada) return // editError ya fue seteado en el composable
 
   // Recargar detalle desde BD con los ítems actualizados

@@ -27,6 +27,12 @@ export type HistorialVentaItem = {
   subtotalCentavos: number
 }
 
+export type ItemModificado = {
+  id: number
+  cantidad: number
+  precioVentaUnitarioCentavos: number
+}
+
 export type HistorialVentaDetalle = {
   venta: HistorialVenta
   items: HistorialVentaItem[]
@@ -250,7 +256,15 @@ export function useHistorialVentas() {
   const supabase = useSupabaseClient<Database>()
   const editarVentaRpc = supabase.rpc.bind(supabase) as unknown as (
     fn: 'editar_venta',
-    args: { p_venta_id: number, p_items_a_eliminar: number[] }
+    args: {
+      p_venta_id: number
+      p_items_a_eliminar: number[]
+      p_items_modificados: {
+        id: number
+        cantidad: number
+        precio_venta_unitario: number
+      }[]
+    }
   ) => PromiseLike<{ data: Json | null, error: { message: string } | null }>
   const ventas = ref<HistorialVenta[]>([])
   const totalCount = ref(0)
@@ -506,7 +520,11 @@ export function useHistorialVentas() {
   }
 
   // ── Editar venta: eliminar ítems y recalcular totales (Corrección 1) ────────
-  async function editarVenta(ventaId: number, itemsAEliminar: number[]): Promise<HistorialVenta | null> {
+  async function editarVenta(
+    ventaId: number,
+    itemsAEliminar: number[],
+    itemsModificados: ItemModificado[]
+  ): Promise<HistorialVenta | null> {
     if (editing.value) return null
     editing.value = true
     editError.value = null
@@ -514,7 +532,12 @@ export function useHistorialVentas() {
     try {
       const { data, error: rpcError } = await editarVentaRpc('editar_venta', {
         p_venta_id: ventaId,
-        p_items_a_eliminar: itemsAEliminar
+        p_items_a_eliminar: itemsAEliminar,
+        p_items_modificados: itemsModificados.map(item => ({
+          id: item.id,
+          cantidad: item.cantidad,
+          precio_venta_unitario: fromCents(item.precioVentaUnitarioCentavos)
+        }))
       })
 
       if (rpcError) throw new Error(rpcError.message)

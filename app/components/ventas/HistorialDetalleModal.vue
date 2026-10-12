@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import type { HistorialVentaDetalle, HistorialVentaItem } from '~/composables/useHistorialVentas'
-import { formatBs } from '~/utils/money'
+import type { HistorialVentaDetalle, HistorialVentaItem, ItemModificado } from '~/composables/useHistorialVentas'
+import { esCantidadValida, normalizarCantidad } from '~/utils/cantidad'
+import { formatBs, fromCents, redondearCentavos, toCents } from '~/utils/money'
 
 const props = defineProps<{
   open: boolean
@@ -15,26 +16,78 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: []
   retry: []
-  guardarEdicion: [itemsAEliminar: number[]]
+  guardarEdicion: [itemsAEliminar: number[], itemsModificados: ItemModificado[]]
 }>()
+
+type ItemEdicion = HistorialVentaItem & {
+  cantidadInput: string | number
+  precioVentaInput: string | number
+}
 
 // ── Estado local de edición ────────────────────────────────────────────────
 const modoEdicion = ref(false)
 // Conjunto de ids reales de venta_items (HistorialVentaItem.id) a eliminar
 const itemsEliminadosIds = ref<Set<number>>(new Set())
+const itemsEditados = ref<ItemEdicion[]>([])
 
-const itemsVisibles = computed<HistorialVentaItem[]>(() => {
-  if (!props.detalle) return []
-  return props.detalle.items.filter(item => !itemsEliminadosIds.value.has(item.id))
-})
+const itemsVisibles = computed(() => (
+  itemsEditados.value.filter(item => !itemsEliminadosIds.value.has(item.id))
+))
+
+function cantidadEditada(item: ItemEdicion) {
+  const valor = String(item.cantidadInput).trim()
+  if (valor === '') return null
+  const cantidad = Number(valor)
+  return esCantidadValida(cantidad) ? normalizarCantidad(cantidad) : null
+}
+
+function precioEditadoCentavos(item: ItemEdicion) {
+  const precio = String(item.precioVentaInput).trim()
+  if (!/^\d+(?:\.\d{1,2})?$/.test(precio)) return null
+  const centavos = toCents(precio)
+  return centavos !== null && centavos >= 0 ? centavos : null
+}
+
+function subtotalEditadoCentavos(item: ItemEdicion) {
+  const cantidad = cantidadEditada(item)
+  const precioCentavos = precioEditadoCentavos(item)
+  if (cantidad === null || precioCentavos === null) return null
+  return redondearCentavos(cantidad * precioCentavos)
+}
+
+function subtotalMostrado(item: ItemEdicion) {
+  const subtotal = subtotalEditadoCentavos(item)
+  return subtotal === null ? 'Inválido' : formatBs(subtotal)
+}
+
+const hayErroresEdicion = computed(() => itemsVisibles.value.some(item => (
+  cantidadEditada(item) === null || precioEditadoCentavos(item) === null
+)))
 
 const totalEditadoCentavos = computed(() => {
-  const bruto = itemsVisibles.value.reduce((sum, item) => sum + item.subtotalCentavos, 0)
+  const bruto = itemsVisibles.value.reduce(
+    (sum, item) => sum + (subtotalEditadoCentavos(item) ?? 0),
+    0
+  )
   const descuento = props.detalle?.venta.descuentoCentavos ?? 0
   return Math.max(bruto - descuento, 0)
 })
 
+const itemsModificados = computed<ItemModificado[]>(() => itemsVisibles.value.flatMap((item) => {
+  const cantidad = cantidadEditada(item)
+  const precioVentaUnitarioCentavos = precioEditadoCentavos(item)
+  if (cantidad === null || precioVentaUnitarioCentavos === null) return []
+  if (
+    cantidad === item.cantidad
+    && precioVentaUnitarioCentavos === item.precioVentaUnitarioCentavos
+  ) return []
+
+  return [{ id: item.id, cantidad, precioVentaUnitarioCentavos }]
+}))
+
 const hayItemsEliminados = computed(() => itemsEliminadosIds.value.size > 0)
+const hayModificaciones = computed(() => itemsModificados.value.length > 0)
+const hayCambios = computed(() => hayItemsEliminados.value || hayModificaciones.value)
 
 function eliminarItem(itemId: number) {
   // No se puede eliminar si quedaría 0 ítems
@@ -45,18 +98,25 @@ function eliminarItem(itemId: number) {
 }
 
 function entrarModoEdicion() {
+  if (!props.detalle) return
   itemsEliminadosIds.value = new Set()
+  itemsEditados.value = props.detalle.items.map(item => ({
+    ...item,
+    cantidadInput: String(item.cantidad),
+    precioVentaInput: fromCents(item.precioVentaUnitarioCentavos).toFixed(2)
+  }))
   modoEdicion.value = true
 }
 
 function cancelarEdicion() {
   itemsEliminadosIds.value = new Set()
+  itemsEditados.value = []
   modoEdicion.value = false
 }
 
 function guardarEdicion() {
-  if (!props.detalle || !hayItemsEliminados.value || props.editing) return
-  emit('guardarEdicion', [...itemsEliminadosIds.value])
+  if (!props.detalle || !hayCambios.value || hayErroresEdicion.value || props.editing) return
+  emit('guardarEdicion', [...itemsEliminadosIds.value], itemsModificados.value)
 }
 
 // Cuando editing pasa de true → false sin error, salir del modo edición
@@ -66,6 +126,7 @@ watch(
     if (oldVal === true && newVal === false && !props.editError) {
       modoEdicion.value = false
       itemsEliminadosIds.value = new Set()
+      itemsEditados.value = []
     }
   }
 )
@@ -77,6 +138,7 @@ watch(
     if (!open) {
       modoEdicion.value = false
       itemsEliminadosIds.value = new Set()
+      itemsEditados.value = []
     }
   }
 )
@@ -252,8 +314,8 @@ watch(
             <circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/>
           </svg>
           <span>
-            Presiona <strong>✕</strong> en cada producto para quitarlo de la venta.
-            Los totales se recalculan en tiempo real.
+            Edita la <strong>cantidad</strong> o el <strong>P. Venta</strong> de cada producto,
+            o presiona <strong>✕</strong> para quitarlo. Los totales se recalculan en tiempo real.
           </span>
         </div>
 
@@ -278,9 +340,10 @@ watch(
           <div>
             <dt class="text-gray-500">Total</dt>
             <dd class="font-semibold text-gray-900">
-              <template v-if="modoEdicion && hayItemsEliminados">
+              <template v-if="modoEdicion && hayCambios">
                 <span class="mr-1 text-xs line-through text-gray-400">{{ formatBs(detalle.venta.totalCentavos) }}</span>
-                <span class="text-[#6B3A2A]">{{ formatBs(totalEditadoCentavos) }}</span>
+                <span v-if="!hayErroresEdicion" class="text-[#6B3A2A]">{{ formatBs(totalEditadoCentavos) }}</span>
+                <span v-else class="text-sm text-red-700">Corrige los valores</span>
               </template>
               <template v-else>{{ formatBs(detalle.venta.totalCentavos) }}</template>
             </dd>
@@ -289,8 +352,11 @@ watch(
           <div>
             <dt class="text-gray-500">Saldo pendiente</dt>
             <dd class="font-semibold text-gray-900">
-              <template v-if="modoEdicion && hayItemsEliminados">
-                {{ formatBs(Math.max(totalEditadoCentavos - detalle.venta.pagadoCentavos, 0)) }}
+              <template v-if="modoEdicion && hayCambios">
+                <template v-if="!hayErroresEdicion">
+                  {{ formatBs(Math.max(totalEditadoCentavos - detalle.venta.pagadoCentavos, 0)) }}
+                </template>
+                <span v-else class="text-red-700">Corrige los valores</span>
               </template>
               <template v-else>
                 {{ formatBs(Math.max(detalle.venta.totalCentavos - detalle.venta.pagadoCentavos, 0)) }}
@@ -330,14 +396,49 @@ watch(
               <!-- MODO EDICIÓN -->
               <template v-if="modoEdicion">
                 <tr
-                  v-for="item in detalle.items"
-                  v-show="!itemsEliminadosIds.has(item.id)"
+                  v-for="item in itemsVisibles"
                   :key="item.id"
                 >
                   <td class="px-4 py-3 font-medium text-gray-900">{{ item.nombreProducto }}</td>
-                  <td class="px-4 py-3 text-center text-gray-700">{{ item.cantidad }}</td>
-                  <td class="px-4 py-3 text-right text-gray-700">{{ formatBs(item.precioVentaUnitarioCentavos) }}</td>
-                  <td class="px-4 py-3 text-right font-semibold text-gray-900">{{ formatBs(item.subtotalCentavos) }}</td>
+                  <td class="px-4 py-3 text-center">
+                    <input
+                      v-model="item.cantidadInput"
+                      type="number"
+                      inputmode="decimal"
+                      min="0.01"
+                      step="0.01"
+                      :aria-label="`Cantidad de ${item.nombreProducto}`"
+                      :aria-invalid="cantidadEditada(item) === null"
+                      class="w-24 rounded-lg border px-2 py-2 text-right outline-none focus:ring-2 focus:ring-[#D4A574]"
+                      :class="cantidadEditada(item) === null ? 'border-red-500' : 'border-[#D4A574]'"
+                    >
+                  </td>
+                  <td class="px-4 py-3 text-right">
+                    <label
+                      class="ml-auto flex w-32 items-center gap-1 rounded-lg border px-2 focus-within:ring-2 focus-within:ring-[#D4A574]"
+                      :class="precioEditadoCentavos(item) === null ? 'border-red-500' : 'border-[#D4A574]'"
+                    >
+                      <span class="text-xs font-semibold text-[#6B3A2A]">Bs</span>
+                      <input
+                        v-model="item.precioVentaInput"
+                        type="number"
+                        inputmode="decimal"
+                        min="0"
+                        step="0.01"
+                        :aria-label="`Precio de venta de ${item.nombreProducto}`"
+                        :aria-invalid="precioEditadoCentavos(item) === null"
+                        class="min-w-0 flex-1 bg-transparent py-2 text-right outline-none"
+                      >
+                    </label>
+                  </td>
+                  <td
+                    class="px-4 py-3 text-right font-semibold"
+                    :class="subtotalEditadoCentavos(item) === null ? 'text-red-700' : 'text-gray-900'"
+                  >
+                    {{ subtotalEditadoCentavos(item) === null
+                      ? 'Inválido'
+                      : formatBs(subtotalEditadoCentavos(item) || 0) }}
+                  </td>
                   <td class="px-4 py-3 text-center">
                     <button
                       type="button"
@@ -388,7 +489,7 @@ watch(
             >Cancelar</button>
             <button
               type="button"
-              :disabled="!hayItemsEliminados || editing"
+              :disabled="!hayCambios || hayErroresEdicion || editing"
               class="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#6B3A2A] px-5 py-2.5 font-semibold text-white hover:bg-[#8B5A3C] focus:outline-none focus:ring-2 focus:ring-[#D4A574] disabled:cursor-not-allowed disabled:opacity-60"
               @click="guardarEdicion"
             >
