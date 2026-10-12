@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { CotizacionCarritoItem } from '~/composables/useCotizaciones'
-import { formatBs, toCents } from '~/utils/money'
+import { esCantidadValida, normalizarCantidad } from '~/utils/cantidad'
+import { formatBs, redondearCentavos, toCents } from '~/utils/money'
 
 defineProps<{ items: CotizacionCarritoItem[] }>()
 
@@ -13,12 +14,12 @@ const emit = defineEmits<{
 
 function updateCantidad(item: CotizacionCarritoItem, event: Event) {
   const input = event.target as HTMLInputElement
-  const value = Number(input.value)
-  if (!Number.isInteger(value) || value < 1) {
+  const cantidad = Number(input.value)
+  if (!esCantidadValida(cantidad)) {
     input.value = String(item.cantidad)
     return
   }
-  emit('updateCantidad', item.productoId, value)
+  emit('updateCantidad', item.productoId, normalizarCantidad(cantidad))
 }
 
 function updatePrecio(item: CotizacionCarritoItem, event: Event) {
@@ -86,9 +87,9 @@ function updatePrecio(item: CotizacionCarritoItem, event: Event) {
                   :id="`cotizacion-cantidad-${item.productoId}`"
                   :value="item.cantidad"
                   type="number"
-                  min="1"
-                  step="1"
-                  inputmode="numeric"
+                  min="0.01"
+                  step="0.01"
+                  inputmode="decimal"
                   class="w-12 rounded-lg border border-[#D4A574] px-1 py-2 text-center focus:outline-none focus:ring-2 focus:ring-[#D4A574] sm:w-16 md:w-20 md:px-2"
                   @change="updateCantidad(item, $event)"
                 >
@@ -115,7 +116,7 @@ function updatePrecio(item: CotizacionCarritoItem, event: Event) {
               </td>
 
               <td class="whitespace-nowrap px-1.5 py-3 text-right font-semibold text-[#6B3A2A] sm:px-3 md:px-4">
-                {{ formatBs(item.precioVentaCentavos * item.cantidad) }}
+                {{ formatBs(redondearCentavos(item.precioVentaCentavos * item.cantidad)) }}
               </td>
 
               <td class="px-1.5 py-3 text-center sm:px-3 md:px-4">

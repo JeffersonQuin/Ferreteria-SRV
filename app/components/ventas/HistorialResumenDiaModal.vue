@@ -50,8 +50,8 @@ function onKeydown(e: KeyboardEvent) {
   if (e.key !== 'Tab' || !panel.value) return
   const focusables = Array.from(panel.value.querySelectorAll<HTMLElement>(focusableSelector))
   if (!focusables.length) return
-  const first = focusables[0]
-  const last = focusables[focusables.length - 1]
+  const first = focusables[0]!
+  const last = focusables[focusables.length - 1]!
   if (e.shiftKey) {
     if (document.activeElement === first) { e.preventDefault(); last.focus() }
   } else {

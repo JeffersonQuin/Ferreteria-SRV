@@ -1,7 +1,8 @@
 import type { Cliente } from '~/composables/useClientes'
 import type { Producto } from '~/composables/useProductos'
 import type { Database, Json } from '~/types/database.types'
-import { formatBs, toCents } from '~/utils/money'
+import { esCantidadValida, normalizarCantidad } from '~/utils/cantidad'
+import { formatBs, redondearCentavos, toCents } from '~/utils/money'
 
 export type VentaEstado = 'Completo' | 'Pendiente' | 'No pagado'
 
@@ -53,6 +54,8 @@ function readFiniteNumber(value: Json | undefined) {
   return Number.isFinite(parsed) ? parsed : null
 }
 
+function readInteger(value: Json | undefined, allowNull: true): number | null | undefined
+function readInteger(value: Json | undefined, allowNull?: false): number | undefined
 function readInteger(value: Json | undefined, allowNull = false) {
   if (allowNull && value === null) return null
   const parsed = readFiniteNumber(value)
@@ -73,7 +76,10 @@ function parseVentaItem(value: Json): VentaRegistradaItem | null {
   if (!isRecord(value)) return null
 
   const productoId = readInteger(value.producto_id, true)
-  const cantidad = readInteger(value.cantidad)
+  const cantidadRaw = readFiniteNumber(value.cantidad)
+  const cantidad = cantidadRaw !== null && esCantidadValida(cantidadRaw)
+    ? normalizarCantidad(cantidadRaw)
+    : undefined
   const precioVentaUnitarioCentavos = readMoneyCents(value.precio_venta_unitario)
   const subtotalCentavos = readMoneyCents(value.subtotal)
 
@@ -86,7 +92,7 @@ function parseVentaItem(value: Json): VentaRegistradaItem | null {
     || subtotalCentavos === null
   ) return null
 
-  const subtotalCalculado = precioVentaUnitarioCentavos * cantidad
+  const subtotalCalculado = redondearCentavos(precioVentaUnitarioCentavos * cantidad)
   // Permitir ±1 centavo de tolerancia para redondeo decimal
   if (!Number.isSafeInteger(subtotalCalculado) || Math.abs(subtotalCalculado - subtotalCentavos) > 1) return null
 
@@ -148,7 +154,10 @@ export function parseVentaRegistrada(value: Json): VentaRegistrada | null {
   const itemsTotalCentavos = items.reduce((total, item) => total + item.subtotalCentavos, 0)
   // Validar que itemsTotal === total + descuento (bruto antes de descuento)
   const totalEsperado = totalCentavos + descuentoCentavos
-  if (!Number.isSafeInteger(itemsTotalCentavos) || itemsTotalCentavos !== totalEsperado) return null
+  if (
+    !Number.isSafeInteger(itemsTotalCentavos)
+    || Math.abs(itemsTotalCentavos - totalEsperado) > 1
+  ) return null
 
   if (totalCentavos > 0) {
     const estadoEsperado: VentaEstado = pagadoCentavos === 0
@@ -191,6 +200,43 @@ function createComprobanteSnapshot(
   })
 }
 
+function mensajeErrorRegistroVenta(cause: unknown): string {
+  const detalle = cause instanceof Error
+    ? cause.message
+    : typeof cause === 'object'
+      && cause !== null
+      && 'message' in cause
+      && typeof cause.message === 'string'
+      ? cause.message
+      : ''
+
+  const detalleNormalizado = detalle.toLowerCase()
+
+  if (
+    detalleNormalizado.includes('cantidad debe ser un entero')
+    || detalleNormalizado.includes('invalid input syntax for type integer')
+    || (detalleNormalizado.includes('cantidad') && detalleNormalizado.includes('integer'))
+  ) {
+    return 'Supabase todavía exige cantidades enteras. Ejecuta la sección D del spec027 en el SQL Editor para cambiar cantidad a numeric(12,2) y actualizar registrar_venta.'
+  }
+
+  if (
+    detalleNormalizado.includes('could not find the function')
+    || detalleNormalizado.includes('function public.registrar_venta')
+    || detalleNormalizado.includes('p_descuento')
+  ) {
+    return 'La función registrar_venta de Supabase no coincide con el frontend. Reemplázala por la versión de 4 parámetros de la sección D.5 del spec027.'
+  }
+
+  if (detalle === 'La RPC devolvió un formato inesperado.') {
+    return 'Supabase respondió con datos inconsistentes. Revisa el historial antes de reintentar para evitar registrar la venta dos veces.'
+  }
+
+  return detalle
+    ? `No fue posible registrar la venta. Supabase indicó: ${detalle}`
+    : 'No fue posible registrar la venta. Tus datos se conservaron para reintentar.'
+}
+
 export function useVentas() {
   const supabase = useSupabaseClient<Database>()
   const clienteSeleccionado = ref<Cliente | null>(null)
@@ -206,14 +252,19 @@ export function useVentas() {
   const comprobante = shallowRef<ComprobanteSnapshot | null>(null)
 
   const numeroArticulos = computed(() =>
-    carrito.value.reduce((total, item) => total + item.cantidad, 0)
+    normalizarCantidad(carrito.value.reduce((total, item) => total + item.cantidad, 0))
   )
   const totalCentavos = computed(() =>
-    carrito.value.reduce((total, item) => total + item.precioVentaCentavos * item.cantidad, 0)
+    carrito.value.reduce(
+      (total, item) => total + redondearCentavos(item.precioVentaCentavos * item.cantidad),
+      0
+    )
   )
   const gananciaCentavos = computed(() =>
     carrito.value.reduce(
-      (total, item) => total + (item.precioVentaCentavos - item.precioCostoCentavos) * item.cantidad,
+      (total, item) => total + redondearCentavos(
+        (item.precioVentaCentavos - item.precioCostoCentavos) * item.cantidad
+      ),
       0
     )
   )
@@ -229,7 +280,7 @@ export function useVentas() {
     montoIngresadoCentavos.value !== null && montoIngresadoCentavos.value >= 0
   )
   const cantidadesValidas = computed(() =>
-    carrito.value.every(item => Number.isInteger(item.cantidad) && item.cantidad > 0)
+    carrito.value.every(item => esCantidadValida(item.cantidad))
   )
   const cambioCentavos = computed(() =>
     montoValido.value ? Math.max((montoIngresadoCentavos.value ?? 0) - totalConDescuentoCentavos.value, 0) : 0
@@ -272,11 +323,12 @@ export function useVentas() {
   // Variante original (mantiene compatibilidad con flujo legacy de la página)
   function agregarProducto() {
     const producto = productoSeleccionado.value
-    if (!producto || !Number.isInteger(cantidad.value) || cantidad.value < 1) return false
+    if (!producto || !esCantidadValida(cantidad.value)) return false
 
+    const cantidadNormalizada = normalizarCantidad(cantidad.value)
     const existente = carrito.value.find(item => item.productoId === producto.id)
     if (existente) {
-      existente.cantidad += cantidad.value
+      existente.cantidad = normalizarCantidad(existente.cantidad + cantidadNormalizada)
     } else {
       const precioVentaCentavos = toCents(producto.precio_venta)
       const precioCostoCentavos = toCents(producto.precio_costo)
@@ -289,7 +341,7 @@ export function useVentas() {
         nombre: producto.nombre,
         precioVentaCentavos,
         precioCostoCentavos,
-        cantidad: cantidad.value
+        cantidad: cantidadNormalizada
       })
     }
 
@@ -307,22 +359,30 @@ export function useVentas() {
     precioCostoCentavos: number,
     cant: number
   ) {
-    if (!Number.isInteger(cant) || cant < 1) return false
+    if (!esCantidadValida(cant)) return false
+
+    const cantidadNormalizada = normalizarCantidad(cant)
     const existente = carrito.value.find(item => item.productoId === productoId)
     if (existente) {
-      existente.cantidad += cant
+      existente.cantidad = normalizarCantidad(existente.cantidad + cantidadNormalizada)
     } else {
-      carrito.value.push({ productoId, nombre, precioVentaCentavos, precioCostoCentavos, cantidad: cant })
+      carrito.value.push({
+        productoId,
+        nombre,
+        precioVentaCentavos,
+        precioCostoCentavos,
+        cantidad: cantidadNormalizada
+      })
     }
     error.value = null
     return true
   }
 
   function actualizarCantidad(productoId: number, nuevaCantidad: number) {
-    if (!Number.isInteger(nuevaCantidad) || nuevaCantidad < 1) return false
+    if (!esCantidadValida(nuevaCantidad)) return false
     const item = carrito.value.find(entry => entry.productoId === productoId)
     if (!item) return false
-    item.cantidad = nuevaCantidad
+    item.cantidad = normalizarCantidad(nuevaCantidad)
     error.value = null
     return true
   }
@@ -368,7 +428,7 @@ export function useVentas() {
       return null
     }
     if (!cantidadesValidas.value) {
-      error.value = 'Todas las cantidades deben ser enteros mayores que cero.'
+      error.value = 'Todas las cantidades deben ser mayores que cero (hasta 2 decimales).'
       return null
     }
     if (!montoValido.value || montoIngresadoCentavos.value === null) {
@@ -401,7 +461,7 @@ export function useVentas() {
       return parsed
     } catch (cause) {
       console.error('[Ventas] Error al registrar venta', cause)
-      error.value = 'No fue posible registrar la venta. Tus datos se conservaron para reintentar.'
+      error.value = mensajeErrorRegistroVenta(cause)
       return null
     } finally {
       registering.value = false

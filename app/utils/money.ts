@@ -14,6 +14,14 @@ export function fromCents(cents: number): number {
   return cents / 100
 }
 
+/** Redondea centavos fraccionarios igual que PostgreSQL numeric: mitades lejos de cero. */
+export function redondearCentavos(centavos: number): number {
+  const magnitud = Math.abs(centavos)
+  const toleranciaFlotante = Number.EPSILON * Math.max(1, magnitud) * 2
+  const resultado = Math.sign(centavos) * Math.round(magnitud + toleranciaFlotante)
+  return Object.is(resultado, -0) ? 0 : resultado
+}
+
 /** Solo el número con 2 decimales, sin prefijo "Bs". */
 export function formatMonto(cents: number): string {
   return fromCents(cents).toFixed(2)

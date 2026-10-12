@@ -1,7 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { HistorialVentaDetalle } from '~/composables/useHistorialVentas'
 import { parseHistorialItem, parseHistorialVenta } from '~/composables/useHistorialVentas'
-import { fromCents, toCents } from '~/utils/money'
+import { esCantidadValida, normalizarCantidad } from '~/utils/cantidad'
+import { fromCents, redondearCentavos, toCents } from '~/utils/money'
 
 export type HistorialCotizacion = {
   id: number
@@ -57,6 +58,8 @@ function readFiniteNumber(value: unknown) {
   return Number.isFinite(parsed) ? parsed : null
 }
 
+function readPositiveInteger(value: unknown, allowNull: true): number | null | undefined
+function readPositiveInteger(value: unknown, allowNull?: false): number | undefined
 function readPositiveInteger(value: unknown, allowNull = false) {
   if (allowNull && (value === null || value === undefined)) return null
   const parsed = readFiniteNumber(value)
@@ -110,7 +113,10 @@ function parseHistorialCotizacionItem(value: unknown): HistorialCotizacionItem |
   const id = readPositiveInteger(value.id)
   const cotizacionId = readPositiveInteger(value.cotizacion_id)
   const productoId = readPositiveInteger(value.producto_id, true)
-  const cantidad = readPositiveInteger(value.cantidad)
+  const cantidadRaw = readFiniteNumber(value.cantidad)
+  const cantidad = cantidadRaw !== null && esCantidadValida(cantidadRaw)
+    ? normalizarCantidad(cantidadRaw)
+    : undefined
   const precioVentaUnitarioCentavos = readMoneyCents(value.precio_venta_unitario)
   const subtotalCentavos = readMoneyCents(value.subtotal)
 
@@ -126,7 +132,7 @@ function parseHistorialCotizacionItem(value: unknown): HistorialCotizacionItem |
   ) return null
 
   // Tolerancia de ±1 centavo por redondeo de precio_venta_unitario * cantidad
-  const subtotalCalculado = precioVentaUnitarioCentavos * cantidad
+  const subtotalCalculado = redondearCentavos(precioVentaUnitarioCentavos * cantidad)
   if (!Number.isSafeInteger(subtotalCalculado) || Math.abs(subtotalCalculado - subtotalCentavos) > 1) return null
 
   return {
@@ -163,7 +169,7 @@ function parseConversion(
   if (
     !Number.isSafeInteger(totalItemsCentavos)
     || venta.descuentoCentavos !== descuentoEsperadoCentavos
-    || totalItemsCentavos !== venta.totalCentavos + venta.descuentoCentavos
+    || Math.abs(totalItemsCentavos - (venta.totalCentavos + venta.descuentoCentavos)) > 1
     || validItems.some(item => item.ventaId !== venta.id)
     || readPositiveInteger(value.cotizacion_id) !== cotizacionIdEsperado
   ) return null
@@ -351,7 +357,7 @@ export function useHistorialCotizaciones() {
       }
 
       const totalItemsCentavos = items.reduce((sum, item) => safeAdd(sum, item.subtotalCentavos), 0)
-      const tieneInconsistencia = totalItemsCentavos !== cotizacion.totalCentavos
+      const tieneInconsistencia = Math.abs(totalItemsCentavos - cotizacion.totalCentavos) > 1
 
       if (requestId !== detailRequestId) return null
       detalle.value = { cotizacion, items: [...items], totalItemsCentavos, tieneInconsistencia }

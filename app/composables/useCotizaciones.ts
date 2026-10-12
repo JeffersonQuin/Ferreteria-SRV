@@ -1,6 +1,7 @@
 import type { Cliente } from '~/composables/useClientes'
 import type { Database, Json } from '~/types/database.types'
-import { toCents } from '~/utils/money'
+import { esCantidadValida, normalizarCantidad } from '~/utils/cantidad'
+import { redondearCentavos, toCents } from '~/utils/money'
 
 export type CotizacionCarritoItem = {
   productoId: number
@@ -50,6 +51,8 @@ function readFiniteNumber(value: Json | undefined) {
   return Number.isFinite(parsed) ? parsed : null
 }
 
+function readInteger(value: Json | undefined, allowNull: true): number | null | undefined
+function readInteger(value: Json | undefined, allowNull?: false): number | undefined
 function readInteger(value: Json | undefined, allowNull = false) {
   if (allowNull && value === null) return null
   const parsed = readFiniteNumber(value)
@@ -66,7 +69,10 @@ function parseCotizacionItem(value: Json): CotizacionRegistradaItem | null {
   if (!isRecord(value)) return null
 
   const productoId = readInteger(value.producto_id, true)
-  const cantidad = readInteger(value.cantidad)
+  const cantidadRaw = readFiniteNumber(value.cantidad)
+  const cantidad = cantidadRaw !== null && esCantidadValida(cantidadRaw)
+    ? normalizarCantidad(cantidadRaw)
+    : undefined
   const precioVentaUnitarioCentavos = readMoneyCents(value.precio_venta_unitario)
   const subtotalCentavos = readMoneyCents(value.subtotal)
 
@@ -79,7 +85,7 @@ function parseCotizacionItem(value: Json): CotizacionRegistradaItem | null {
     || subtotalCentavos === null
   ) return null
 
-  const subtotalCalculado = precioVentaUnitarioCentavos * cantidad
+  const subtotalCalculado = redondearCentavos(precioVentaUnitarioCentavos * cantidad)
   // Tolerancia de ±1 centavo por redondeo decimal
   if (!Number.isSafeInteger(subtotalCalculado) || Math.abs(subtotalCalculado - subtotalCentavos) > 1) return null
 
@@ -127,7 +133,10 @@ export function parseCotizacionRegistrada(value: Json): CotizacionRegistrada | n
   ) return null
 
   const itemsTotalCentavos = items.reduce((total, item) => total + item.subtotalCentavos, 0)
-  if (!Number.isSafeInteger(itemsTotalCentavos) || itemsTotalCentavos !== totalCentavos) return null
+  if (
+    !Number.isSafeInteger(itemsTotalCentavos)
+    || Math.abs(itemsTotalCentavos - totalCentavos) > 1
+  ) return null
 
   return {
     id,
@@ -146,6 +155,42 @@ function createComprobanteSnapshot(cotizacion: CotizacionRegistrada): Cotizacion
   return Object.freeze({ ...cotizacion, items })
 }
 
+function mensajeErrorRegistroCotizacion(cause: unknown): string {
+  const detalle = cause instanceof Error
+    ? cause.message
+    : typeof cause === 'object'
+      && cause !== null
+      && 'message' in cause
+      && typeof cause.message === 'string'
+      ? cause.message
+      : ''
+
+  const detalleNormalizado = detalle.toLowerCase()
+
+  if (
+    detalleNormalizado.includes('cantidad debe ser un entero')
+    || detalleNormalizado.includes('invalid input syntax for type integer')
+    || (detalleNormalizado.includes('cantidad') && detalleNormalizado.includes('integer'))
+  ) {
+    return 'Supabase todavía exige cantidades enteras en registrar_cotizacion. Actualiza la RPC para validar hasta 2 decimales y eliminar el cast ::integer.'
+  }
+
+  if (
+    detalleNormalizado.includes('could not find the function')
+    || detalleNormalizado.includes('function public.registrar_cotizacion')
+  ) {
+    return 'La función registrar_cotizacion de Supabase no coincide con el frontend. Debe conservar únicamente la firma registrar_cotizacion(bigint, jsonb).'
+  }
+
+  if (detalle === 'La RPC devolvió un formato inesperado.') {
+    return 'Supabase respondió con datos inconsistentes. Revisa el historial antes de reintentar para evitar registrar la cotización dos veces.'
+  }
+
+  return detalle
+    ? `No fue posible registrar la cotización. Supabase indicó: ${detalle}`
+    : 'No fue posible registrar la cotización. Tus datos se conservaron para reintentar.'
+}
+
 export function useCotizaciones() {
   const supabase = useSupabaseClient<Database>()
   const rpc = supabase.rpc.bind(supabase) as unknown as UntypedRpc
@@ -158,19 +203,24 @@ export function useCotizaciones() {
   const comprobante = shallowRef<CotizacionComprobanteSnapshot | null>(null)
 
   const numeroArticulos = computed(() =>
-    carrito.value.reduce((total, item) => total + item.cantidad, 0)
+    normalizarCantidad(carrito.value.reduce((total, item) => total + item.cantidad, 0))
   )
   const totalCentavos = computed(() =>
-    carrito.value.reduce((total, item) => total + item.precioVentaCentavos * item.cantidad, 0)
+    carrito.value.reduce(
+      (total, item) => total + redondearCentavos(item.precioVentaCentavos * item.cantidad),
+      0
+    )
   )
   const gananciaCentavos = computed(() =>
     carrito.value.reduce(
-      (total, item) => total + (item.precioVentaCentavos - item.precioCostoCentavos) * item.cantidad,
+      (total, item) => total + redondearCentavos(
+        (item.precioVentaCentavos - item.precioCostoCentavos) * item.cantidad
+      ),
       0
     )
   )
   const cantidadesValidas = computed(() =>
-    carrito.value.every(item => Number.isInteger(item.cantidad) && item.cantidad > 0)
+    carrito.value.every(item => esCantidadValida(item.cantidad))
   )
   const canRegister = computed(() =>
     Boolean(clienteSeleccionado.value)
@@ -190,22 +240,30 @@ export function useCotizaciones() {
     precioCostoCentavos: number,
     cant: number
   ) {
-    if (!Number.isInteger(cant) || cant < 1) return false
+    if (!esCantidadValida(cant)) return false
+
+    const cantidadNormalizada = normalizarCantidad(cant)
     const existente = carrito.value.find(item => item.productoId === productoId)
     if (existente) {
-      existente.cantidad += cant
+      existente.cantidad = normalizarCantidad(existente.cantidad + cantidadNormalizada)
     } else {
-      carrito.value.push({ productoId, nombre, precioVentaCentavos, precioCostoCentavos, cantidad: cant })
+      carrito.value.push({
+        productoId,
+        nombre,
+        precioVentaCentavos,
+        precioCostoCentavos,
+        cantidad: cantidadNormalizada
+      })
     }
     error.value = null
     return true
   }
 
   function actualizarCantidad(productoId: number, nuevaCantidad: number) {
-    if (!Number.isInteger(nuevaCantidad) || nuevaCantidad < 1) return false
+    if (!esCantidadValida(nuevaCantidad)) return false
     const item = carrito.value.find(entry => entry.productoId === productoId)
     if (!item) return false
-    item.cantidad = nuevaCantidad
+    item.cantidad = normalizarCantidad(nuevaCantidad)
     error.value = null
     return true
   }
@@ -247,7 +305,7 @@ export function useCotizaciones() {
       return null
     }
     if (!cantidadesValidas.value) {
-      error.value = 'Todas las cantidades deben ser enteros mayores que cero.'
+      error.value = 'Todas las cantidades deben ser mayores que cero (hasta 2 decimales).'
       return null
     }
 
@@ -273,7 +331,7 @@ export function useCotizaciones() {
       return parsed
     } catch (cause) {
       console.error('[Cotizaciones] Error al registrar cotización', cause)
-      error.value = 'No fue posible registrar la cotización. Tus datos se conservaron para reintentar.'
+      error.value = mensajeErrorRegistroCotizacion(cause)
       return null
     } finally {
       registering.value = false

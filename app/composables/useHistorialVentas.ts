@@ -1,5 +1,6 @@
 import type { Database, Json, VentaEstado } from '~/types/database.types'
-import { fromCents, toCents } from '~/utils/money'
+import { esCantidadValida, normalizarCantidad } from '~/utils/cantidad'
+import { fromCents, redondearCentavos, toCents } from '~/utils/money'
 
 export type HistorialEstadoFiltro = VentaEstado | 'Todos'
 
@@ -85,6 +86,8 @@ function readFiniteNumber(value: unknown) {
   return Number.isFinite(parsed) ? parsed : null
 }
 
+function readPositiveInteger(value: unknown, allowNull: true): number | null | undefined
+function readPositiveInteger(value: unknown, allowNull?: false): number | undefined
 function readPositiveInteger(value: unknown, allowNull = false) {
   if (allowNull && value === null) return null
   const parsed = readFiniteNumber(value)
@@ -163,7 +166,10 @@ export function parseHistorialItem(value: unknown): HistorialVentaItem | null {
   const id = readPositiveInteger(value.id)
   const ventaId = readPositiveInteger(value.venta_id)
   const productoId = readPositiveInteger(value.producto_id, true)
-  const cantidad = readPositiveInteger(value.cantidad)
+  const cantidadRaw = readFiniteNumber(value.cantidad)
+  const cantidad = cantidadRaw !== null && esCantidadValida(cantidadRaw)
+    ? normalizarCantidad(cantidadRaw)
+    : undefined
   const precioVentaUnitarioCentavos = readMoneyCents(value.precio_venta_unitario)
   const subtotalCentavos = readMoneyCents(value.subtotal)
 
@@ -179,7 +185,7 @@ export function parseHistorialItem(value: unknown): HistorialVentaItem | null {
   ) return null
 
   // Tolerancia de ±1 centavo por redondeo de precio_venta_unitario * cantidad
-  const subtotalCalculado = precioVentaUnitarioCentavos * cantidad
+  const subtotalCalculado = redondearCentavos(precioVentaUnitarioCentavos * cantidad)
   if (!Number.isSafeInteger(subtotalCalculado) || Math.abs(subtotalCalculado - subtotalCentavos) > 1) return null
 
   return {
@@ -242,6 +248,10 @@ function errorMessage(cause: unknown, fallback: string) {
 
 export function useHistorialVentas() {
   const supabase = useSupabaseClient<Database>()
+  const editarVentaRpc = supabase.rpc.bind(supabase) as unknown as (
+    fn: 'editar_venta',
+    args: { p_venta_id: number, p_items_a_eliminar: number[] }
+  ) => PromiseLike<{ data: Json | null, error: { message: string } | null }>
   const ventas = ref<HistorialVenta[]>([])
   const totalCount = ref(0)
   const page = ref(1)
@@ -466,7 +476,8 @@ export function useHistorialVentas() {
         (sum, item) => safeAdd(sum, item.subtotalCentavos),
         0
       )
-      const tieneInconsistencia = totalItemsCentavos !== venta.totalCentavos
+      const totalEsperadoCentavos = venta.totalCentavos + venta.descuentoCentavos
+      const tieneInconsistencia = Math.abs(totalItemsCentavos - totalEsperadoCentavos) > 1
 
       if (requestId !== detailRequestId) return null
       detalle.value = { venta, items: [...items], totalItemsCentavos, tieneInconsistencia }
@@ -501,7 +512,7 @@ export function useHistorialVentas() {
     editError.value = null
 
     try {
-      const { data, error: rpcError } = await supabase.rpc('editar_venta', {
+      const { data, error: rpcError } = await editarVentaRpc('editar_venta', {
         p_venta_id: ventaId,
         p_items_a_eliminar: itemsAEliminar
       })

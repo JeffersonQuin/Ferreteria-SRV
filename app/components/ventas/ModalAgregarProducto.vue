@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AutocompleteProducto from '~/components/ventas/AutocompleteProducto.vue'
 import type { Producto, ProductoPayload } from '~/composables/useProductos'
+import { esCantidadValida, normalizarCantidad } from '~/utils/cantidad'
 import { formatBs, toCents } from '~/utils/money'
 
 const props = defineProps<{
@@ -31,8 +32,8 @@ const dialogEl = ref<HTMLDivElement | null>(null)
 const autocompleteInputRef = ref<HTMLInputElement | null>(null)
 
 const cantidadNumerica = computed(() => {
-  const n = Number(cantidadStr.value)
-  return Number.isInteger(n) && n > 0 ? n : null
+  const cantidad = Number(cantidadStr.value)
+  return esCantidadValida(cantidad) ? normalizarCantidad(cantidad) : null
 })
 
 const canAccept = computed(() =>
@@ -116,7 +117,7 @@ function onCantidadInput() {
 // Botones − / + del selector de cantidad (solo mueven el mismo campo de texto).
 function cambiarCantidad(delta: number) {
   const actual = cantidadNumerica.value ?? 0
-  cantidadStr.value = String(Math.max(1, actual + delta))
+  cantidadStr.value = String(normalizarCantidad(Math.max(0.01, actual + delta)))
   mostrarErrorCantidad.value = false
 }
 
@@ -305,10 +306,10 @@ function onKeydown(event: KeyboardEvent) {
                   ref="cantidadInput"
                   v-model="cantidadStr"
                   type="number"
-                  min="1"
-                  step="1"
-                  inputmode="numeric"
-                  placeholder="Ej: 3"
+                  min="0.01"
+                  step="0.01"
+                  inputmode="decimal"
+                  placeholder="Ej: 2.5"
                   :disabled="disabled"
                   class="min-h-[3.25rem] w-full min-w-0 rounded-xl border px-3 text-center text-xl font-semibold text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 disabled:bg-gray-100"
                   :class="mostrarErrorCantidad
@@ -329,7 +330,7 @@ function onKeydown(event: KeyboardEvent) {
                 role="alert"
                 class="mt-1.5 text-sm text-red-700"
               >
-                Ingresa la cantidad
+                Ingresa una cantidad mayor que 0 con hasta 2 decimales
               </p>
             </div>
 
