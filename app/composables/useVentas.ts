@@ -260,7 +260,7 @@ export function useVentas() {
       0
     )
   )
-  const gananciaCentavos = computed(() =>
+  const gananciaBrutaCentavos = computed(() =>
     carrito.value.reduce(
       (total, item) => total + redondearCentavos(
         (item.precioVentaCentavos - item.precioCostoCentavos) * item.cantidad
@@ -273,6 +273,11 @@ export function useVentas() {
     const c = toCents(descuento.value)
     return c !== null && c >= 0 ? c : 0
   })
+  // Ganancia neta: igual a la fórmula del backend (ganancia_bruta - descuento),
+  // para que el Resumen de Pago coincida con lo que se guarda al registrar la venta.
+  const gananciaCentavos = computed(() =>
+    gananciaBrutaCentavos.value - descuentoCentavos.value
+  )
   const totalConDescuentoCentavos = computed(() =>
     Math.max(totalCentavos.value - descuentoCentavos.value, 0)
   )
@@ -483,6 +488,7 @@ export function useVentas() {
     totalCentavos,
     descuentoCentavos,
     totalConDescuentoCentavos,
+    gananciaBrutaCentavos,
     gananciaCentavos,
     montoIngresadoCentavos,
     montoValido,
