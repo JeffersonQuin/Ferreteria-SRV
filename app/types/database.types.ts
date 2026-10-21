@@ -183,7 +183,7 @@ export type Database = {
           p_cliente_id: number
           p_monto_ingresado: number
           p_items: Json
-          p_descuento?: number
+          p_descuento: number
         }
         Returns: Json
       }
