@@ -1,5 +1,6 @@
 import type { Database, Json, VentaEstado } from '~/types/database.types'
 import { esCantidadValida, normalizarCantidad } from '~/utils/cantidad'
+import { finDiaBoliviaUtc, inicioDiaBoliviaUtc } from '~/utils/fecha'
 import { fromCents, redondearCentavos, toCents } from '~/utils/money'
 
 export type HistorialEstadoFiltro = VentaEstado | 'Todos'
@@ -715,8 +716,8 @@ export function useHistorialVentas() {
       const { data, error: queryError } = await supabase
         .from('ventas')
         .select(VENTA_COLUMNS)
-        .gte('fecha', `${fecha}T00:00:00`)
-        .lte('fecha', `${fecha}T23:59:59`)
+        .gte('fecha', inicioDiaBoliviaUtc(fecha))
+        .lt('fecha', finDiaBoliviaUtc(fecha))
         .order('fecha', { ascending: true })
         .order('id', { ascending: true })
 

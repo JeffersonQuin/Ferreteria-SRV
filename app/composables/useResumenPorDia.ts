@@ -1,4 +1,5 @@
 import type { Database, VentaEstado } from '~/types/database.types'
+import { fechaDiaBolivia, finDiaBoliviaUtc, inicioDiaBoliviaUtc } from '~/utils/fecha'
 import { toCents } from '~/utils/money'
 
 // ── Tipos para el resumen agrupado por día ──────────────────────────────────
@@ -154,8 +155,8 @@ export function useResumenPorDia() {
         const { data, error: queryError } = await supabase
           .from('ventas')
           .select(VENTA_COLUMNS)
-          .gte('fecha', `${desde}T00:00:00`)
-          .lte('fecha', `${hasta}T23:59:59.999`)
+          .gte('fecha', inicioDiaBoliviaUtc(desde))
+          .lt('fecha', finDiaBoliviaUtc(hasta))
           .order('fecha', { ascending: true })
           .order('id', { ascending: true })
           .range(offset, offset + BATCH_SIZE - 1)
@@ -188,8 +189,8 @@ export function useResumenPorDia() {
       }>()
 
       for (const venta of collected) {
-        // Extraer solo la fecha (YYYY-MM-DD) sin la hora
-        const fechaDia = venta.fecha.split('T')[0] ?? venta.fecha
+        // Agrupar por el día calendario de Bolivia (UTC−4).
+        const fechaDia = fechaDiaBolivia(venta.fecha)
 
         const actual = porDia.get(fechaDia) ?? {
           ventas: 0,

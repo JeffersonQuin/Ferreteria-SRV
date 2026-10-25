@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ResumenDia } from '~/composables/useHistorialVentas'
+import { fechaDiaBolivia } from '~/utils/fecha'
 import { formatBs } from '~/utils/money'
 
 const props = defineProps<{
@@ -16,7 +17,7 @@ const emit = defineEmits<{
 
 // ── Estado local ──────────────────────────────────────────────────────────
 function hoy() {
-  return new Date().toISOString().slice(0, 10)
+  return fechaDiaBolivia(new Date().toISOString())
 }
 
 const fecha = ref(hoy())
